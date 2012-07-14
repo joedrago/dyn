@@ -53,7 +53,7 @@
 
 typedef struct dynArray
 {
-    char **entries;
+    char **values;
     dynArraySize size;
     dynArraySize capacity;
 } dynArray;
@@ -75,7 +75,7 @@ static dynArray *daChangeCapacity(dynArraySize newCapacity, char ***prevptr)
 
     newArray = (dynArray *)calloc(1, sizeof(dynArray) + (sizeof(char*) * newCapacity));
     newArray->capacity = newCapacity;
-    newArray->entries = (char **)(((char *)newArray) + sizeof(dynArray));
+    newArray->values = (char **)(((char *)newArray) + sizeof(dynArray));
     if(prevptr)
     {
         if(prevArray)
@@ -83,11 +83,11 @@ static dynArray *daChangeCapacity(dynArraySize newCapacity, char ***prevptr)
             int copyCount = prevArray->size;
             if(copyCount > newArray->capacity)
                 copyCount = newArray->capacity;
-            memcpy(newArray->entries, prevArray->entries, sizeof(char*) * copyCount);
+            memcpy(newArray->values, prevArray->values, sizeof(char*) * copyCount);
             newArray->size = copyCount;
             free(prevArray);
         }
-        *prevptr = newArray->entries;
+        *prevptr = newArray->values;
     }
     return newArray;
 }
@@ -112,7 +112,7 @@ static dynArray *daGet(char ***daptr, int autoCreate)
     return da;
 }
 
-// this assumes you've already destroyed any soon-to-be orphaned entries at the end
+// this assumes you've already destroyed any soon-to-be orphaned values at the end
 static void daChangeSize(char ***daptr, DYNAMIC_ARRAY_SIZE_TYPE newSize)
 {
     dynArray *da = daGet((char ***)daptr, 1);
@@ -125,7 +125,7 @@ static void daChangeSize(char ***daptr, DYNAMIC_ARRAY_SIZE_TYPE newSize)
     }
     if(newSize > da->size)
     {
-        memset(da->entries + da->size, 0, sizeof(char*) * (newSize - da->size));
+        memset(da->values + da->size, 0, sizeof(char*) * (newSize - da->size));
     }
     da->size = newSize;
 }
@@ -153,8 +153,8 @@ static void daClearRange(dynArray *da, int start, int end, daDestroyFunc destroy
         int i;
         for(i = start; i < end; ++i)
         {
-            if(da->entries[i])
-                destroyFunc(da->entries[i]);
+            if(da->values[i])
+                destroyFunc(da->values[i]);
         }
     }
 }
@@ -166,8 +166,8 @@ static void daClearRangeP1(dynArray *da, int start, int end, daDestroyFuncP1 des
         int i;
         for(i = start; i < end; ++i)
         {
-            if(da->entries[i])
-                destroyFunc(p1, da->entries[i]);
+            if(da->values[i])
+                destroyFunc(p1, da->values[i]);
         }
     }
 }
@@ -179,8 +179,8 @@ static void daClearRangeP2(dynArray *da, int start, int end, daDestroyFuncP2 des
         int i;
         for(i = start; i < end; ++i)
         {
-            if(da->entries[i])
-                destroyFunc(p1, p2, da->entries[i]);
+            if(da->values[i])
+                destroyFunc(p1, p2, da->values[i]);
         }
     }
 }
@@ -265,8 +265,8 @@ void *daShift(void *daptr)
     dynArray *da = daGet((char ***)daptr, 0);
     if(da && da->size > 0)
     {
-        void *ret = da->entries[0];
-        memmove(da->entries, da->entries + 1, sizeof(char*) * da->size);
+        void *ret = da->values[0];
+        memmove(da->values, da->values + 1, sizeof(char*) * da->size);
         --da->size;
         return ret;
     }
@@ -278,16 +278,16 @@ void daUnshift(void *daptr, void *p)
     dynArray *da = daMakeRoom(daptr, 1);
     if(da->size > 0)
     {
-        memmove(da->entries + 1, da->entries, sizeof(char*) * da->size);
+        memmove(da->values + 1, da->values, sizeof(char*) * da->size);
     }
-    da->entries[0] = p;
+    da->values[0] = p;
     da->size++;
 }
 
 DYNAMIC_ARRAY_SIZE_TYPE daPush(void *daptr, void *entry)
 {
     dynArray *da = daMakeRoom(daptr, 1);
-    da->entries[da->size++] = entry;
+    da->values[da->size++] = entry;
     return da->size - 1;
 }
 
@@ -296,7 +296,7 @@ void *daPop(void *daptr)
     dynArray *da = daGet((char ***)daptr, 0);
     if(da && (da->size > 0))
     {
-        return da->entries[--da->size];
+        return da->values[--da->size];
     }
     return NULL;
 }
@@ -313,8 +313,8 @@ void daInsert(void *daptr, DYNAMIC_ARRAY_SIZE_TYPE index, void *p)
     }
     else
     {
-        memmove(da->entries + index + 1, da->entries + index, sizeof(char*) * (da->size - index));
-        da->entries[index] = p;
+        memmove(da->values + index + 1, da->values + index, sizeof(char*) * (da->size - index));
+        da->values[index] = p;
         ++da->size;
     }
 }
@@ -327,7 +327,7 @@ void daErase(void *daptr, DYNAMIC_ARRAY_SIZE_TYPE index)
     if((index < 0) || (!da->size) || (index >= da->size))
         return;
 
-    memmove(da->entries + index, da->entries + index + 1, sizeof(char*) * (da->size - index));
+    memmove(da->values + index, da->values + index + 1, sizeof(char*) * (da->size - index));
     --da->size;
 }
 
@@ -401,9 +401,9 @@ void daSquash(void *daptr)
         int tail = 0;
         for( ; tail < da->size ; tail++)
         {
-            if(da->entries[tail] != NULL)
+            if(da->values[tail] != NULL)
             {
-                da->entries[head] = da->entries[tail];
+                da->values[head] = da->values[tail];
                 head++;
             }
         }

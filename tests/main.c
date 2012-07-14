@@ -7,6 +7,7 @@
 
 #include "dynArray.h"
 #include "dynString.h"
+#include "dynMap.h"
 
 #include <stdlib.h>
 #include <stdarg.h>
@@ -67,6 +68,13 @@ static void fillObjects(Object ***arr)
         obj->name = names[i];
         daPush(arr, obj);
     }
+}
+
+static Object *createObject(const char *name)
+{
+    Object *object = (Object *)calloc(1, sizeof(*object));
+    object->name = name;
+    return object;
 }
 
 static void printObjects(Object ***arr)
@@ -449,23 +457,52 @@ void test_dsSetCapacity()
     dsDestroy(&str);
 }
 
-#undef dsCreate
-#undef dsDestroy
-#undef dsClear
-#undef dsCopyLen
-#undef dsCopy
-#undef dsConcatLen
-#undef dsConcat
-#undef dsPrintf
-#undef dsConcatv
-#undef dsConcatf
-#undef dsSetLength
-#undef dsCalcLength
-#undef dsSetCapacity
-#undef dsCmp
-#undef dsLength
-#undef dsCapacity
+// ------------------------------------------------------------------------------------------------
+// dynMap Tests
 
+void test_dmCreate()
+{
+    char *integers = NULL;
+    dmCreate(&integers, KEYTYPE_STRING, sizeof(char), DYNAMIC_MAP_DEFAULT_WIDTH);
+    dmGetS(integers, "Foo") = 'A';
+    dmGetS(integers, "Bar") = 'B';
+    dmGetS(integers, "Baz") = 'C';
+    printf("Foo: %c\n", dmGetS(integers, "Foo"));
+    printf("Bar: %c\n", dmGetS(integers, "Bar"));
+    printf("Baz: %c\n", dmGetS(integers, "Baz"));
+    dmDestroy(&integers, NULL);
+}
+
+void test_dmGetS()
+{
+    Object **objects = NULL;
+    dmGetS(objects, "Foo") = createObject("Herp");
+    dmGetS(objects, "Bar") = createObject("Derp");
+    dmGetS(objects, "Baz") = createObject("Skerp");
+    printf("Foo: 0x%p\n", dmGetS(objects, "Foo"));
+    printf("Bar: 0x%p\n", dmGetS(objects, "Bar"));
+    printf("Baz: 0x%p\n", dmGetS(objects, "Baz"));
+    dmClear(&objects, (dmDestroyFunc)destroyObject);
+    printf("Foo: 0x%p\n", dmGetS(objects, "Foo"));
+    printf("Bar: 0x%p\n", dmGetS(objects, "Bar"));
+    printf("Baz: 0x%p\n", dmGetS(objects, "Baz"));
+    printf("has index Foo: %d\n", dmHasStringIndex(&objects, "Foo"));
+    printf("has index Wat: %d\n", dmHasStringIndex(&objects, "Wat"));
+    dmDestroy(&objects, (dmDestroyFunc)destroyObject);
+}
+
+void test_dmGetI()
+{
+    int *integers = NULL;
+    dmCreate(&integers, KEYTYPE_INTEGER, sizeof(int), DYNAMIC_MAP_DEFAULT_WIDTH);
+    dmGetI(integers, 15) = 150;
+    dmGetI(integers, 16) = 160;
+    dmGetI(integers, 17) = 170;
+    printf("15: %d\n", dmGetI(integers, 15));
+    printf("16: %d\n", dmGetI(integers, 16));
+    printf("17: %d\n", dmGetI(integers, 17));
+    dmDestroy(&integers, NULL);
+}
 
 // ------------------------------------------------------------------------------------------------
 // "Harness"
@@ -513,6 +550,10 @@ int main(int argc, char **argv)
     TEST(dsSetLength);
     TEST(dsCalcLength);
     TEST(dsSetCapacity);
+
+    TEST(dmCreate);
+    TEST(dmGetS);
+    TEST(dmGetI);
 
     printf("\nTotal errors: %d\n\n", totalErrors);
     return 0;
