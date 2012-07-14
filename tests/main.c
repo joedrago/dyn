@@ -486,8 +486,8 @@ void test_dmGetS()
     printf("Foo: 0x%p\n", dmGetS(objects, "Foo"));
     printf("Bar: 0x%p\n", dmGetS(objects, "Bar"));
     printf("Baz: 0x%p\n", dmGetS(objects, "Baz"));
-    printf("has index Foo: %d\n", dmHasStringIndex(&objects, "Foo"));
-    printf("has index Wat: %d\n", dmHasStringIndex(&objects, "Wat"));
+    printf("has index Foo: %d\n", dmHasS(&objects, "Foo"));
+    printf("has index Wat: %d\n", dmHasS(&objects, "Wat"));
     dmDestroy(&objects, (dmDestroyFunc)destroyObject);
 }
 
@@ -501,6 +501,10 @@ void test_dmGetI()
     printf("15: %d\n", dmGetI(integers, 15));
     printf("16: %d\n", dmGetI(integers, 16));
     printf("17: %d\n", dmGetI(integers, 17));
+    printf("has index 15: %d\n", dmHasI(&integers, 15));
+    printf("has index 20: %d\n", dmHasI(&integers, 20));
+    dmEraseInteger(&integers, 15, NULL);
+    printf("has index 15: %d\n", dmHasI(&integers, 15));
     dmDestroy(&integers, NULL);
 }
 
@@ -518,38 +522,38 @@ int main(int argc, char **argv)
 {
     int prevErrors = 0;
 
-    TEST(daCreate);
-    TEST(daDestroy);
-    TEST(daDestroyP1);
-    TEST(daDestroyP2);
-    TEST(daClear);
-    TEST(daClearP1);
-    TEST(daClearP2);
-    TEST(daShift);
-    TEST(daUnshift);
-    TEST(daPush);
-    TEST(daPop);
-    TEST(daInsert);
-    TEST(daErase);
-    TEST(daEraseP1);
-    TEST(daEraseP2);
-    TEST(daSetSize);
-    TEST(daSetSizeP1);
-    TEST(daSetSizeP2);
-    TEST(daSize);
-    TEST(daSetCapacity);
-    TEST(daSetCapacityP1);
-    TEST(daSetCapacityP2);
-    TEST(daCapacity);
-    TEST(daSquash);
-
-    TEST(dsCreate);
-    TEST(dsClear);
-    TEST(dsCopy);
-    TEST(dsPrintf);
-    TEST(dsSetLength);
-    TEST(dsCalcLength);
-    TEST(dsSetCapacity);
+//    TEST(daCreate);
+//    TEST(daDestroy);
+//    TEST(daDestroyP1);
+//    TEST(daDestroyP2);
+//    TEST(daClear);
+//    TEST(daClearP1);
+//    TEST(daClearP2);
+//    TEST(daShift);
+//    TEST(daUnshift);
+//    TEST(daPush);
+//    TEST(daPop);
+//    TEST(daInsert);
+//    TEST(daErase);
+//    TEST(daEraseP1);
+//    TEST(daEraseP2);
+//    TEST(daSetSize);
+//    TEST(daSetSizeP1);
+//    TEST(daSetSizeP2);
+//    TEST(daSize);
+//    TEST(daSetCapacity);
+//    TEST(daSetCapacityP1);
+//    TEST(daSetCapacityP2);
+//    TEST(daCapacity);
+//    TEST(daSquash);
+//
+//    TEST(dsCreate);
+//    TEST(dsClear);
+//    TEST(dsCopy);
+//    TEST(dsPrintf);
+//    TEST(dsSetLength);
+//    TEST(dsCalcLength);
+//    TEST(dsSetCapacity);
 
     TEST(dmCreate);
     TEST(dmGetS);

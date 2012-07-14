@@ -28,6 +28,8 @@ typedef enum dmKeyType
 
 #define dmGetS(MAP, KEY) MAP[dmStringIndex(&MAP, KEY)]
 #define dmGetI(MAP, KEY) MAP[dmIntegerIndex(&MAP, KEY)]
+#define dmHasS dmHasStringIndex
+#define dmHasI dmHasIntegerIndex
 
 typedef (*dmDestroyFunc)(void *p);
 typedef (*dmDestroyFuncP1)(void *p1, void *p);
@@ -36,8 +38,11 @@ typedef (*dmDestroyFuncP2)(void *p1, void *p2, void *p);
 void dmCreate(void *dmptr, dmKeyType keyType, DYNAMIC_MAP_SIZE_TYPE valueSize, DYNAMIC_MAP_SIZE_TYPE tableWidth);
 void dmDestroy(void *dmptr, dmDestroyFunc destroyFunc);
 void dmClear(void *dmptr, dmDestroyFunc destroyFunc);
+void dmEraseString(void *dmptr, const char *key, dmDestroyFunc destroyFunc);
+void dmEraseInteger(void *dmptr, int key, dmDestroyFunc destroyFunc);
 DYNAMIC_MAP_SIZE_TYPE dmStringIndex(void *dmptr, const char *key);
 DYNAMIC_MAP_SIZE_TYPE dmIntegerIndex(void *dmptr, int key);
 int dmHasStringIndex(void *dmptr, const char *str);
+int dmHasIntegerIndex(void *dmptr, int key);
 
 #endif

@@ -261,3 +261,77 @@ int dmHasStringIndex(void *dmptr, const char *str)
     }
     return 0;
 }
+
+int dmHasIntegerIndex(void *dmptr, int key)
+{
+    dynMap *dm = dmGetPtr((char **)dmptr, 1);
+    DYNAMIC_MAP_HASH_TYPE hash = (DYNAMIC_MAP_HASH_TYPE)key;
+    DYNAMIC_MAP_SIZE_TYPE index = hash % dm->width;
+    dynMapEntry *entry = dm->table[index];
+    for( ; entry; entry = entry->next)
+    {
+        if(entry->keyInt == key)
+            return 1;
+    }
+    return 0;
+}
+
+void dmEraseString(void *dmptr, const char *key, dmDestroyFunc destroyFunc)
+{
+    dynMap *dm = dmGetPtr((char **)dmptr, 1);
+    DYNAMIC_MAP_HASH_TYPE hash = (DYNAMIC_MAP_HASH_TYPE)djb2hash(key);
+    DYNAMIC_MAP_SIZE_TYPE index = hash % dm->width;
+    dynMapEntry *prev = NULL;
+    dynMapEntry *entry = dm->table[index];
+    for( ; entry; prev = entry, entry = entry->next)
+    {
+        if(!strcmp(entry->keyStr, key))
+        {
+            char **value;
+            if(prev)
+            {
+                prev->next = entry->next;
+            }
+            else
+            {
+                dm->table[index]->next = dm->table[index] = entry->next;
+            }
+            value = (char**)(dm->values + (entry->index * dm->valueSize));
+            if(destroyFunc && *value)
+                destroyFunc(*value);
+            dm->used[entry->index] = 0;
+            dmDestroyEntry(dm, entry);
+            return;
+        }
+    }
+}
+
+void dmEraseInteger(void *dmptr, int key, dmDestroyFunc destroyFunc)
+{
+    dynMap *dm = dmGetPtr((char **)dmptr, 1);
+    DYNAMIC_MAP_HASH_TYPE hash = (DYNAMIC_MAP_HASH_TYPE)key;
+    DYNAMIC_MAP_SIZE_TYPE index = hash % dm->width;
+    dynMapEntry *prev = NULL;
+    dynMapEntry *entry = dm->table[index];
+    for( ; entry; prev = entry, entry = entry->next)
+    {
+        if(entry->keyInt == key)
+        {
+            char **value;
+            if(prev)
+            {
+                prev->next = entry->next;
+            }
+            else
+            {
+                dm->table[index]->next = dm->table[index] = entry->next;
+            }
+            value = (char**)(dm->values + (entry->index * dm->valueSize));
+            if(destroyFunc && *value)
+                destroyFunc(*value);
+            dm->used[entry->index] = 0;
+            dmDestroyEntry(dm, entry);
+            return;
+        }
+    }
+}
