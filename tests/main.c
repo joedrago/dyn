@@ -90,7 +90,7 @@ static void printObjects(Object ***arr)
 
 static void printString(char **str)
 {
-    printf("String [P:0x%p L:" DYNAMIC_STRING_SIZE_FORMAT " C:" DYNAMIC_STRING_SIZE_FORMAT "]: \"%s\"\n", 
+    printf("String [P:0x%p L:" dynSizeFormat " C:" dynSizeFormat "]: \"%s\"\n", 
         str,
         dsLength(str),
         dsCapacity(str),
@@ -111,30 +111,30 @@ void test_daCreate()
 void test_daDestroy()
 {
     Object **objects = NULL;
-    daDestroy(&objects, (daDestroyFunc)destroyObject); // should do nothing (no lazy creation)
+    daDestroy(&objects, (dynDestroyFunc)destroyObject); // should do nothing (no lazy creation)
     fillObjects(&objects);
-    daDestroy(&objects, (daDestroyFunc)destroyObject);
+    daDestroy(&objects, (dynDestroyFunc)destroyObject);
 }
 
 void test_daDestroyP1()
 {
     Object **objects = NULL;
     fillObjects(&objects);
-    daDestroyP1(&objects, (daDestroyFuncP1)destroyObjectP1, "test_daDestroyP1");
+    daDestroyP1(&objects, (dynDestroyFuncP1)destroyObjectP1, "test_daDestroyP1");
 }
 
 void test_daDestroyP2()
 {
     Object **objects = NULL;
     fillObjects(&objects);
-    daDestroyP2(&objects, (daDestroyFuncP2)destroyObjectP2, "test_daDestroyP1", "pee two");
+    daDestroyP2(&objects, (dynDestroyFuncP2)destroyObjectP2, "test_daDestroyP1", "pee two");
 }
 
 void test_daClear()
 {
     Object **objects = NULL;
     fillObjects(&objects);
-    daClear(&objects, (daDestroyFunc)destroyObject);
+    daClear(&objects, (dynDestroyFunc)destroyObject);
     daDestroy(&objects, NULL);
 }
 
@@ -142,7 +142,7 @@ void test_daClearP1()
 {
     Object **objects = NULL;
     fillObjects(&objects);
-    daClearP1(&objects, (daDestroyFuncP1)destroyObjectP1, "clearP1 p1");
+    daClearP1(&objects, (dynDestroyFuncP1)destroyObjectP1, "clearP1 p1");
     daDestroy(&objects, NULL);
 }
 
@@ -150,7 +150,7 @@ void test_daClearP2()
 {
     Object **objects = NULL;
     fillObjects(&objects);
-    daClearP2(&objects, (daDestroyFuncP2)destroyObjectP2, "clearP2 p1", "clearP2 p2");
+    daClearP2(&objects, (dynDestroyFuncP2)destroyObjectP2, "clearP2 p1", "clearP2 p2");
     daDestroy(&objects, NULL);
 }
 
@@ -164,7 +164,7 @@ void test_daShift()
         printf("Shifted Object: %s\n", obj->name);
         destroyObject(obj);
     }
-    daDestroy(&objects, (daDestroyFunc)destroyObject);
+    daDestroy(&objects, (dynDestroyFunc)destroyObject);
 }
 
 void test_daUnshift()
@@ -174,7 +174,7 @@ void test_daUnshift()
     for(i = 0; i < 5; ++i)
     {
     }
-    daDestroy(&objects, (daDestroyFunc)destroyObject);
+    daDestroy(&objects, (dynDestroyFunc)destroyObject);
 }
 
 void test_daPush()
@@ -187,7 +187,7 @@ void test_daPush()
         obj->name = names[i];
         daPush(&objects, obj);
     }
-    daDestroy(&objects, (daDestroyFunc)destroyObject);
+    daDestroy(&objects, (dynDestroyFunc)destroyObject);
 }
 
 void test_daPop()
@@ -200,7 +200,7 @@ void test_daPop()
         printf("Popped Object: %s\n", obj->name);
         destroyObject(obj);
     }
-    daDestroy(&objects, (daDestroyFunc)destroyObject);
+    daDestroy(&objects, (dynDestroyFunc)destroyObject);
 }
 
 void test_daInsert()
@@ -223,7 +223,7 @@ void test_daInsert()
     obj->name = "last";
     daInsert(&objects, daSize(&objects), obj);
     printObjects(&objects);
-    daDestroy(&objects, (daDestroyFunc)destroyObject);
+    daDestroy(&objects, (dynDestroyFunc)destroyObject);
 }
 
 void test_daErase()
@@ -235,7 +235,7 @@ void test_daErase()
     destroyObject(objects[3]);
     daErase(&objects, 3);
     printObjects(&objects);
-    daDestroy(&objects, (daDestroyFunc)destroyObject);
+    daDestroy(&objects, (dynDestroyFunc)destroyObject);
 }
 
 void test_daEraseP1()
@@ -247,7 +247,7 @@ void test_daEraseP1()
     destroyObject(objects[3]);
     daErase(&objects, 3);
     printObjects(&objects);
-    daDestroy(&objects, (daDestroyFunc)destroyObject);
+    daDestroy(&objects, (dynDestroyFunc)destroyObject);
 }
 
 void test_daEraseP2()
@@ -259,43 +259,43 @@ void test_daEraseP2()
     destroyObject(objects[3]);
     daErase(&objects, 3);
     printObjects(&objects);
-    daDestroy(&objects, (daDestroyFunc)destroyObject);
+    daDestroy(&objects, (dynDestroyFunc)destroyObject);
 }
 
 void test_daSetSize()
 {
     Object **objects = NULL;
     fillObjects(&objects);
-    daSetSize(&objects, 20, (daDestroyFunc)destroyObject);
-    daSetSize(&objects, 2, (daDestroyFunc)destroyObject);
-    daSetSize(&objects, 20, (daDestroyFunc)destroyObject);
-    daSetSize(&objects, 2, (daDestroyFunc)destroyObject);
+    daSetSize(&objects, 20, (dynDestroyFunc)destroyObject);
+    daSetSize(&objects, 2, (dynDestroyFunc)destroyObject);
+    daSetSize(&objects, 20, (dynDestroyFunc)destroyObject);
+    daSetSize(&objects, 2, (dynDestroyFunc)destroyObject);
     printObjects(&objects);
-    daDestroy(&objects, (daDestroyFunc)destroyObject);
+    daDestroy(&objects, (dynDestroyFunc)destroyObject);
 }
 
 void test_daSetSizeP1()
 {
     Object **objects = NULL;
     fillObjects(&objects);
-    daSetSizeP1(&objects, 20, (daDestroyFuncP1)destroyObjectP1, "daSetSizeP1 p1");
-    daSetSizeP1(&objects, 2, (daDestroyFuncP1)destroyObjectP1, "daSetSizeP1 p1");
-    daSetSizeP1(&objects, 20, (daDestroyFuncP1)destroyObjectP1, "daSetSizeP1 p1");
-    daSetSizeP1(&objects, 2, (daDestroyFuncP1)destroyObjectP1, "daSetSizeP1 p1");
+    daSetSizeP1(&objects, 20, (dynDestroyFuncP1)destroyObjectP1, "daSetSizeP1 p1");
+    daSetSizeP1(&objects, 2, (dynDestroyFuncP1)destroyObjectP1, "daSetSizeP1 p1");
+    daSetSizeP1(&objects, 20, (dynDestroyFuncP1)destroyObjectP1, "daSetSizeP1 p1");
+    daSetSizeP1(&objects, 2, (dynDestroyFuncP1)destroyObjectP1, "daSetSizeP1 p1");
     printObjects(&objects);
-    daDestroy(&objects, (daDestroyFunc)destroyObject);
+    daDestroy(&objects, (dynDestroyFunc)destroyObject);
 }
 
 void test_daSetSizeP2()
 {
     Object **objects = NULL;
     fillObjects(&objects);
-    daSetSizeP2(&objects, 20, (daDestroyFuncP2)destroyObjectP2, "p1", "p2");
-    daSetSizeP2(&objects, 2, (daDestroyFuncP2)destroyObjectP2, "p1", "p2");
-    daSetSizeP2(&objects, 20, (daDestroyFuncP2)destroyObjectP2, "p1", "p2");
-    daSetSizeP2(&objects, 2, (daDestroyFuncP2)destroyObjectP2, "p1", "p2");
+    daSetSizeP2(&objects, 20, (dynDestroyFuncP2)destroyObjectP2, "p1", "p2");
+    daSetSizeP2(&objects, 2, (dynDestroyFuncP2)destroyObjectP2, "p1", "p2");
+    daSetSizeP2(&objects, 20, (dynDestroyFuncP2)destroyObjectP2, "p1", "p2");
+    daSetSizeP2(&objects, 2, (dynDestroyFuncP2)destroyObjectP2, "p1", "p2");
     printObjects(&objects);
-    daDestroy(&objects, (daDestroyFunc)destroyObject);
+    daDestroy(&objects, (dynDestroyFunc)destroyObject);
 }
 
 void test_daSize()
@@ -305,41 +305,41 @@ void test_daSize()
     if(objects)
         testFail("daSize is lazily creating dynArrays");
     fillObjects(&objects);
-    printf("size: " DYNAMIC_ARRAY_SIZE_FORMAT "\n", daSize(&objects));
-    daDestroy(&objects, (daDestroyFunc)destroyObject);
+    printf("size: " dynSizeFormat "\n", daSize(&objects));
+    daDestroy(&objects, (dynDestroyFunc)destroyObject);
 }
 
 void test_daSetCapacity()
 {
     Object **objects = NULL;
     fillObjects(&objects);
-    daSetCapacity(&objects, 10, (daDestroyFunc)destroyObject);
-    daSetCapacity(&objects, 3, (daDestroyFunc)destroyObject);
-    daSetCapacity(&objects, 10, (daDestroyFunc)destroyObject);
+    daSetCapacity(&objects, 10, (dynDestroyFunc)destroyObject);
+    daSetCapacity(&objects, 3, (dynDestroyFunc)destroyObject);
+    daSetCapacity(&objects, 10, (dynDestroyFunc)destroyObject);
     printObjects(&objects);
-    daDestroy(&objects, (daDestroyFunc)destroyObject);
+    daDestroy(&objects, (dynDestroyFunc)destroyObject);
 }
 
 void test_daSetCapacityP1()
 {
     Object **objects = NULL;
     fillObjects(&objects);
-    daSetCapacityP1(&objects, 10, (daDestroyFuncP1)destroyObjectP1, "p1");
-    daSetCapacityP1(&objects, 3, (daDestroyFuncP1)destroyObjectP1, "p1");
-    daSetCapacityP1(&objects, 10, (daDestroyFuncP1)destroyObjectP1, "p1");
+    daSetCapacityP1(&objects, 10, (dynDestroyFuncP1)destroyObjectP1, "p1");
+    daSetCapacityP1(&objects, 3, (dynDestroyFuncP1)destroyObjectP1, "p1");
+    daSetCapacityP1(&objects, 10, (dynDestroyFuncP1)destroyObjectP1, "p1");
     printObjects(&objects);
-    daDestroy(&objects, (daDestroyFunc)destroyObject);
+    daDestroy(&objects, (dynDestroyFunc)destroyObject);
 }
 
 void test_daSetCapacityP2()
 {
     Object **objects = NULL;
     fillObjects(&objects);
-    daSetCapacityP2(&objects, 10, (daDestroyFuncP2)destroyObjectP2, "p1", "p2");
-    daSetCapacityP2(&objects, 3, (daDestroyFuncP2)destroyObjectP2, "p1", "p2");
-    daSetCapacityP2(&objects, 10, (daDestroyFuncP2)destroyObjectP2, "p1", "p2");
+    daSetCapacityP2(&objects, 10, (dynDestroyFuncP2)destroyObjectP2, "p1", "p2");
+    daSetCapacityP2(&objects, 3, (dynDestroyFuncP2)destroyObjectP2, "p1", "p2");
+    daSetCapacityP2(&objects, 10, (dynDestroyFuncP2)destroyObjectP2, "p1", "p2");
     printObjects(&objects);
-    daDestroy(&objects, (daDestroyFunc)destroyObject);
+    daDestroy(&objects, (dynDestroyFunc)destroyObject);
 }
 
 void test_daCapacity()
@@ -349,8 +349,8 @@ void test_daCapacity()
     if(objects)
         testFail("daCapacity is lazily creating dynArrays");
     fillObjects(&objects);
-    printf("capacity: " DYNAMIC_ARRAY_SIZE_FORMAT "\n", daCapacity(&objects));
-    daDestroy(&objects, (daDestroyFunc)destroyObject);
+    printf("capacity: " dynSizeFormat "\n", daCapacity(&objects));
+    daDestroy(&objects, (dynDestroyFunc)destroyObject);
 }
 
 void test_daSquash()
@@ -363,7 +363,7 @@ void test_daSquash()
     objects[3] = NULL;
     daSquash(&objects);
     printObjects(&objects);
-    daDestroy(&objects, (daDestroyFunc)destroyObject);
+    daDestroy(&objects, (dynDestroyFunc)destroyObject);
 }
 
 // ------------------------------------------------------------------------------------------------
@@ -460,52 +460,32 @@ void test_dsSetCapacity()
 // ------------------------------------------------------------------------------------------------
 // dynMap Tests
 
-void test_dmCreate()
-{
-    char *integers = NULL;
-    dmCreate(&integers, KEYTYPE_STRING, sizeof(char), DYNAMIC_MAP_DEFAULT_WIDTH);
-    dmGetS(integers, "Foo") = 'A';
-    dmGetS(integers, "Bar") = 'B';
-    dmGetS(integers, "Baz") = 'C';
-    printf("Foo: %c\n", dmGetS(integers, "Foo"));
-    printf("Bar: %c\n", dmGetS(integers, "Bar"));
-    printf("Baz: %c\n", dmGetS(integers, "Baz"));
-    dmDestroy(&integers, NULL);
-}
-
 void test_dmGetS()
 {
-    Object **objects = NULL;
-    dmGetS(objects, "Foo") = createObject("Herp");
-    dmGetS(objects, "Bar") = createObject("Derp");
-    dmGetS(objects, "Baz") = createObject("Skerp");
-    printf("Foo: 0x%p\n", dmGetS(objects, "Foo"));
-    printf("Bar: 0x%p\n", dmGetS(objects, "Bar"));
-    printf("Baz: 0x%p\n", dmGetS(objects, "Baz"));
-    dmClear(&objects, (dmDestroyFunc)destroyObject);
-    printf("Foo: 0x%p\n", dmGetS(objects, "Foo"));
-    printf("Bar: 0x%p\n", dmGetS(objects, "Bar"));
-    printf("Baz: 0x%p\n", dmGetS(objects, "Baz"));
-    printf("has index Foo: %d\n", dmHasS(&objects, "Foo"));
-    printf("has index Wat: %d\n", dmHasS(&objects, "Wat"));
-    dmDestroy(&objects, (dmDestroyFunc)destroyObject);
+    dynMap *dm = dmCreate(KEYTYPE_STRING, 0);
+    dmGetS2P(dm, "Foo") = "A";
+    dmGetS2P(dm, "Bar") = "B";
+    dmGetS2P(dm, "Baz") = "C";
+    printf("Foo: %s\n", dmGetS2P(dm, "Foo"));
+    printf("Bar: %s\n", dmGetS2P(dm, "Bar"));
+    printf("Baz: %s\n", dmGetS2P(dm, "Baz"));
+    dmDestroy(dm, NULL);
 }
 
 void test_dmGetI()
 {
-    int *integers = NULL;
-    dmCreate(&integers, KEYTYPE_INTEGER, sizeof(int), DYNAMIC_MAP_DEFAULT_WIDTH);
-    dmGetI(integers, 15) = 150;
-    dmGetI(integers, 16) = 160;
-    dmGetI(integers, 17) = 170;
-    printf("15: %d\n", dmGetI(integers, 15));
-    printf("16: %d\n", dmGetI(integers, 16));
-    printf("17: %d\n", dmGetI(integers, 17));
-    printf("has index 15: %d\n", dmHasI(&integers, 15));
-    printf("has index 20: %d\n", dmHasI(&integers, 20));
-    dmEraseInteger(&integers, 15, NULL);
-    printf("has index 15: %d\n", dmHasI(&integers, 15));
-    dmDestroy(&integers, NULL);
+    dynMap *dm = dmCreate(KEYTYPE_INTEGER, 0);
+    dmGetI2I(dm, 15) = 150;
+    dmGetI2I(dm, 16) = 160;
+    dmGetI2I(dm, 17) = 170;
+    printf("15: %d\n", dmGetI2I(dm, 15));
+    printf("16: %d\n", dmGetI2I(dm, 16));
+    printf("17: %d\n", dmGetI2I(dm, 17));
+    printf("has index 15: %d\n", dmHasI(dm, 15));
+    printf("has index 20: %d\n", dmHasI(dm, 20));
+    dmEraseInteger(dm, 15, NULL);
+    printf("has index 15: %d\n", dmHasI(dm, 15));
+    dmDestroy(dm, NULL);
 }
 
 // ------------------------------------------------------------------------------------------------
@@ -522,40 +502,39 @@ int main(int argc, char **argv)
 {
     int prevErrors = 0;
 
-//    TEST(daCreate);
-//    TEST(daDestroy);
-//    TEST(daDestroyP1);
-//    TEST(daDestroyP2);
-//    TEST(daClear);
-//    TEST(daClearP1);
-//    TEST(daClearP2);
-//    TEST(daShift);
-//    TEST(daUnshift);
-//    TEST(daPush);
-//    TEST(daPop);
-//    TEST(daInsert);
-//    TEST(daErase);
-//    TEST(daEraseP1);
-//    TEST(daEraseP2);
-//    TEST(daSetSize);
-//    TEST(daSetSizeP1);
-//    TEST(daSetSizeP2);
-//    TEST(daSize);
-//    TEST(daSetCapacity);
-//    TEST(daSetCapacityP1);
-//    TEST(daSetCapacityP2);
-//    TEST(daCapacity);
-//    TEST(daSquash);
-//
-//    TEST(dsCreate);
-//    TEST(dsClear);
-//    TEST(dsCopy);
-//    TEST(dsPrintf);
-//    TEST(dsSetLength);
-//    TEST(dsCalcLength);
-//    TEST(dsSetCapacity);
+    TEST(daCreate);
+    TEST(daDestroy);
+    TEST(daDestroyP1);
+    TEST(daDestroyP2);
+    TEST(daClear);
+    TEST(daClearP1);
+    TEST(daClearP2);
+    TEST(daShift);
+    TEST(daUnshift);
+    TEST(daPush);
+    TEST(daPop);
+    TEST(daInsert);
+    TEST(daErase);
+    TEST(daEraseP1);
+    TEST(daEraseP2);
+    TEST(daSetSize);
+    TEST(daSetSizeP1);
+    TEST(daSetSizeP2);
+    TEST(daSize);
+    TEST(daSetCapacity);
+    TEST(daSetCapacityP1);
+    TEST(daSetCapacityP2);
+    TEST(daCapacity);
+    TEST(daSquash);
 
-    TEST(dmCreate);
+    TEST(dsCreate);
+    TEST(dsClear);
+    TEST(dsCopy);
+    TEST(dsPrintf);
+    TEST(dsSetLength);
+    TEST(dsCalcLength);
+    TEST(dsSetCapacity);
+
     TEST(dmGetS);
     TEST(dmGetI);
 

@@ -5,44 +5,63 @@
 //                  http://www.boost.org/LICENSE_1_0.txt)
 // ---------------------------------------------------------------------------
 
-#ifndef DYNAMIC_MAP_H
-#define DYNAMIC_MAP_H
+#ifndef DYNMAP_H
+#define DYNMAP_H
 
-#ifndef DYNAMIC_MAP_SIZE_TYPE
-#define DYNAMIC_MAP_SIZE_TYPE int
-#endif
+#include "dynBase.h"
 
-#ifndef DYNAMIC_MAP_HASH_TYPE
-#define DYNAMIC_MAP_HASH_TYPE unsigned int
+#ifndef dynMapHash
+#define dynMapHash unsigned int // output from djb2hash
 #endif
 
 typedef enum dmKeyType
 {
     KEYTYPE_STRING = 1,
-    KEYTYPE_INTEGER,
+    KEYTYPE_INTEGER
 } dmKeyType;
 
-#define DYNAMIC_MAP_DEFAULT_KEYTYPE KEYTYPE_STRING
-#define DYNAMIC_MAP_DEFAULT_WIDTH 7
-#define DYNAMIC_MAP_DEFAULT_VALUE_SIZE sizeof(char*)
+typedef struct dynMapEntry
+{
+    union
+    {
+        char *keyStr;
+        dynInt keyInt;
+    };
+    union
+    {
+        void *valuePtr;
+        dynInt valueInt;
+        long long value64;
+    };
+    struct dynMapEntry *next;
+} dynMapEntry;
 
-#define dmGetS(MAP, KEY) MAP[dmStringIndex(&MAP, KEY)]
-#define dmGetI(MAP, KEY) MAP[dmIntegerIndex(&MAP, KEY)]
-#define dmHasS dmHasStringIndex
-#define dmHasI dmHasIntegerIndex
+typedef struct dynMap
+{
+    dynMapEntry **table; // Hash table, .width in size
+    dynSize width;       // width of table
+    int keyType;
+} dynMap;
 
-typedef (*dmDestroyFunc)(void *p);
-typedef (*dmDestroyFuncP1)(void *p1, void *p);
-typedef (*dmDestroyFuncP2)(void *p1, void *p2, void *p);
+dynMap *dmCreate(dmKeyType keyType, dynInt estimatedSize);
+void dmDestroy(dynMap *dm, dynDestroyFunc destroyFunc);
+void dmClear(dynMap *dm, dynDestroyFunc destroyFunc);
 
-void dmCreate(void *dmptr, dmKeyType keyType, DYNAMIC_MAP_SIZE_TYPE valueSize, DYNAMIC_MAP_SIZE_TYPE tableWidth);
-void dmDestroy(void *dmptr, dmDestroyFunc destroyFunc);
-void dmClear(void *dmptr, dmDestroyFunc destroyFunc);
-void dmEraseString(void *dmptr, const char *key, dmDestroyFunc destroyFunc);
-void dmEraseInteger(void *dmptr, int key, dmDestroyFunc destroyFunc);
-DYNAMIC_MAP_SIZE_TYPE dmStringIndex(void *dmptr, const char *key);
-DYNAMIC_MAP_SIZE_TYPE dmIntegerIndex(void *dmptr, int key);
-int dmHasStringIndex(void *dmptr, const char *str);
-int dmHasIntegerIndex(void *dmptr, int key);
+dynMapEntry *dmGetString(dynMap *dm, const char *key);
+int dmHasString(dynMap *dm, const char *key);
+void dmEraseString(dynMap *dm, const char *key, dynDestroyFunc destroyFunc);
+
+dynMapEntry *dmGetInteger(dynMap *dm, dynInt key);
+int dmHasInteger(dynMap *dm, dynInt key);
+void dmEraseInteger(dynMap *dm, int key, dynDestroyFunc destroyFunc);
+
+// Convenience macros
+
+#define dmGetS2P(MAP, KEY) (dmGetString(MAP, KEY)->valuePtr)
+#define dmGetS2I(MAP, KEY) (dmGetString(MAP, KEY)->valueInt)
+#define dmGetI2P(MAP, KEY) (dmGetInteger(MAP, KEY)->valuePtr)
+#define dmGetI2I(MAP, KEY) (dmGetInteger(MAP, KEY)->valueInt)
+#define dmHasS dmHasString
+#define dmHasI dmHasInteger
 
 #endif

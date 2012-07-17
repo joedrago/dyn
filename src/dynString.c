@@ -16,27 +16,6 @@
 #endif
 
 // ------------------------------------------------------------------------------------------------
-// Recreate these definition overrides, as they were unset at the end of the header
-
-#ifdef DYNAMIC_STRING_PREFIX
-#define dsCreate      DYNAMIC_STRING_PREFIX ## Create
-#define dsDestroy     DYNAMIC_STRING_PREFIX ## Destroy
-#define dsClear       DYNAMIC_STRING_PREFIX ## Clear
-#define dsCopyLen     DYNAMIC_STRING_PREFIX ## CopyLen
-#define dsCopy        DYNAMIC_STRING_PREFIX ## Copy
-#define dsConcat      DYNAMIC_STRING_PREFIX ## Concat
-#define dsPrintf      DYNAMIC_STRING_PREFIX ## Printf
-#define dsConcatv     DYNAMIC_STRING_PREFIX ## Concatv
-#define dsConcatf     DYNAMIC_STRING_PREFIX ## Concatf
-#define dsSetLength   DYNAMIC_STRING_PREFIX ## SetLength
-#define dsCalcLength  DYNAMIC_STRING_PREFIX ## CalcLength
-#define dsSetCapacity DYNAMIC_STRING_PREFIX ## SetCapacity
-#define dsCmp         DYNAMIC_STRING_PREFIX ## Cmp
-#define dsLength      DYNAMIC_STRING_PREFIX ## Length
-#define dsCapacity    DYNAMIC_STRING_PREFIX ## Capacity
-#endif
-
-// ------------------------------------------------------------------------------------------------
 // Constants
 
 // ------------------------------------------------------------------------------------------------
@@ -49,13 +28,11 @@ typedef struct dynString
     int capacity;
 } dynString;
 
-#define dynStringSize DYNAMIC_STRING_SIZE_TYPE
-
 // ------------------------------------------------------------------------------------------------
 // Internal helper functions
 
 // workhorse function that does all of the allocation and copying
-static dynString *dsChangeCapacity(dynStringSize newCapacity, char **prevptr)
+static dynString *dsChangeCapacity(dynSize newCapacity, char **prevptr)
 {
     dynString *newString;
     dynString *prevString = NULL;
@@ -148,7 +125,7 @@ void dsClear(char **dsptr)
 // ------------------------------------------------------------------------------------------------
 // manipulation
 
-void dsCopyLen(char **dsptr, const char *text, DYNAMIC_STRING_SIZE_TYPE len)
+void dsCopyLen(char **dsptr, const char *text, dynSize len)
 {
     dynString *ds = dsMakeRoom(dsptr, len, 0);
     memcpy(ds->buffer, text, len);
@@ -158,10 +135,10 @@ void dsCopyLen(char **dsptr, const char *text, DYNAMIC_STRING_SIZE_TYPE len)
 
 void dsCopy(char **dsptr, const char *text)
 {
-    dsCopyLen(dsptr, text, (DYNAMIC_STRING_SIZE_TYPE)strlen(text));
+    dsCopyLen(dsptr, text, (dynSize)strlen(text));
 }
 
-void dsConcatLen(char **dsptr, const char *text, DYNAMIC_STRING_SIZE_TYPE len)
+void dsConcatLen(char **dsptr, const char *text, dynSize len)
 {
     dynString *ds = dsMakeRoom(dsptr, len, 1);
     memcpy(ds->buffer + ds->length, text, len);
@@ -171,7 +148,7 @@ void dsConcatLen(char **dsptr, const char *text, DYNAMIC_STRING_SIZE_TYPE len)
 
 void dsConcat(char **dsptr, const char *text)
 {
-    dsConcatLen(dsptr, text, (DYNAMIC_STRING_SIZE_TYPE)strlen(text));
+    dsConcatLen(dsptr, text, (dynSize)strlen(text));
 }
 
 void dsPrintf(char **dsptr, const char *format, ...)
@@ -212,7 +189,7 @@ void dsConcatf(char **dsptr, const char *format, ...)
     va_end(args);
 }
 
-void dsSetLength(char **dsptr, DYNAMIC_STRING_SIZE_TYPE newLength)
+void dsSetLength(char **dsptr, dynSize newLength)
 {
     dynString *ds;
 
@@ -244,7 +221,7 @@ void dsCalcLength(char **dsptr)
     }
 }
 
-void dsSetCapacity(char **dsptr, DYNAMIC_STRING_SIZE_TYPE newCapacity)
+void dsSetCapacity(char **dsptr, dynSize newCapacity)
 {
     dynString *ds = dsChangeCapacity(newCapacity, dsptr);
     ds->buffer[ds->length] = 0;
@@ -265,7 +242,7 @@ int dsCmp(char **dsptr, char **other)
     return strcmp(s1, s2);
 }
 
-DYNAMIC_STRING_SIZE_TYPE dsLength(char **dsptr)
+dynSize dsLength(char **dsptr)
 {
     dynString *ds = dsGet(dsptr, 0);
     if(ds)
@@ -275,7 +252,7 @@ DYNAMIC_STRING_SIZE_TYPE dsLength(char **dsptr)
     return 0;
 }
 
-DYNAMIC_STRING_SIZE_TYPE dsCapacity(char **dsptr)
+dynSize dsCapacity(char **dsptr)
 {
     dynString *ds = dsGet(dsptr, 0);
     if(ds)

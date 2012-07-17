@@ -11,37 +11,6 @@
 #include <string.h>
 
 // ------------------------------------------------------------------------------------------------
-// Recreate these definition overrides, as they were unset at the end of the header
-
-#ifdef DYNAMIC_ARRAY_PREFIX
-#define daCreate        DYNAMIC_ARRAY_PREFIX ## Create
-#define daDestroy       DYNAMIC_ARRAY_PREFIX ## Destroy
-#define daDestroyP1     DYNAMIC_ARRAY_PREFIX ## DestroyP1
-#define daDestroyP2     DYNAMIC_ARRAY_PREFIX ## DestroyP2
-#define daDestroyFunc   DYNAMIC_ARRAY_PREFIX ## DestroyFunc
-#define daDestroyFuncP1 DYNAMIC_ARRAY_PREFIX ## DestroyFuncP1
-#define daDestroyFuncP2 DYNAMIC_ARRAY_PREFIX ## DestroyFuncP2
-#define daClear         DYNAMIC_ARRAY_PREFIX ## Clear
-#define daClearP1       DYNAMIC_ARRAY_PREFIX ## ClearP1
-#define daClearP2       DYNAMIC_ARRAY_PREFIX ## ClearP2
-#define daShift         DYNAMIC_ARRAY_PREFIX ## Shift
-#define daUnshift       DYNAMIC_ARRAY_PREFIX ## Unshift
-#define daPush          DYNAMIC_ARRAY_PREFIX ## Push
-#define daPop           DYNAMIC_ARRAY_PREFIX ## Pop
-#define daInsert        DYNAMIC_ARRAY_PREFIX ## Insert
-#define daErase         DYNAMIC_ARRAY_PREFIX ## Erase
-#define daSetSize       DYNAMIC_ARRAY_PREFIX ## SetSize
-#define daSetSizeP1     DYNAMIC_ARRAY_PREFIX ## SetSizeP1
-#define daSetSizeP2     DYNAMIC_ARRAY_PREFIX ## SetSizeP2
-#define daSize          DYNAMIC_ARRAY_PREFIX ## Size
-#define daSetCapacity   DYNAMIC_ARRAY_PREFIX ## SetCapacity
-#define daSetCapacityP1 DYNAMIC_ARRAY_PREFIX ## SetCapacityP1
-#define daSetCapacityP2 DYNAMIC_ARRAY_PREFIX ## SetCapacityP2
-#define daCapacity      DYNAMIC_ARRAY_PREFIX ## Capacity
-#define daSquash        DYNAMIC_ARRAY_PREFIX ## Squash
-#endif
-
-// ------------------------------------------------------------------------------------------------
 // Constants
 
 #define DYNAMIC_ARRAY_INITIAL_SIZE 2
@@ -49,7 +18,7 @@
 // ------------------------------------------------------------------------------------------------
 // Internal structures
 
-#define dynArraySize DYNAMIC_ARRAY_SIZE_TYPE
+#define dynArraySize dynSize
 
 typedef struct dynArray
 {
@@ -113,7 +82,7 @@ static dynArray *daGet(char ***daptr, int autoCreate)
 }
 
 // this assumes you've already destroyed any soon-to-be orphaned values at the end
-static void daChangeSize(char ***daptr, DYNAMIC_ARRAY_SIZE_TYPE newSize)
+static void daChangeSize(char ***daptr, dynSize newSize)
 {
     dynArray *da = daGet((char ***)daptr, 1);
     if(da->size == newSize)
@@ -146,7 +115,7 @@ static dynArray *daMakeRoom(char ***daptr, int incomingCount)
 }
 
 // clears [start, (end-1)]
-static void daClearRange(dynArray *da, int start, int end, daDestroyFunc destroyFunc)
+static void daClearRange(dynArray *da, int start, int end, dynDestroyFunc destroyFunc)
 {
     if(destroyFunc)
     {
@@ -159,7 +128,7 @@ static void daClearRange(dynArray *da, int start, int end, daDestroyFunc destroy
     }
 }
 
-static void daClearRangeP1(dynArray *da, int start, int end, daDestroyFuncP1 destroyFunc, void *p1)
+static void daClearRangeP1(dynArray *da, int start, int end, dynDestroyFuncP1 destroyFunc, void *p1)
 {
     if(destroyFunc)
     {
@@ -172,7 +141,7 @@ static void daClearRangeP1(dynArray *da, int start, int end, daDestroyFuncP1 des
     }
 }
 
-static void daClearRangeP2(dynArray *da, int start, int end, daDestroyFuncP2 destroyFunc, void *p1, void *p2)
+static void daClearRangeP2(dynArray *da, int start, int end, dynDestroyFuncP2 destroyFunc, void *p1, void *p2)
 {
     if(destroyFunc)
     {
@@ -193,7 +162,7 @@ void daCreate(void *daptr)
     daGet(daptr, 1);
 }
 
-void daDestroy(void *daptr, daDestroyFunc destroyFunc)
+void daDestroy(void *daptr, dynDestroyFunc destroyFunc)
 {
     dynArray *da = daGet((char ***)daptr, 0);
     if(da)
@@ -204,7 +173,7 @@ void daDestroy(void *daptr, daDestroyFunc destroyFunc)
     }
 }
 
-void daDestroyP1(void *daptr, daDestroyFuncP1 destroyFunc, void *p1)
+void daDestroyP1(void *daptr, dynDestroyFuncP1 destroyFunc, void *p1)
 {
     dynArray *da = daGet((char ***)daptr, 0);
     if(da)
@@ -215,7 +184,7 @@ void daDestroyP1(void *daptr, daDestroyFuncP1 destroyFunc, void *p1)
     }
 }
 
-void daDestroyP2(void *daptr, daDestroyFuncP2 destroyFunc, void *p1, void *p2)
+void daDestroyP2(void *daptr, dynDestroyFuncP2 destroyFunc, void *p1, void *p2)
 {
     dynArray *da = daGet((char ***)daptr, 0);
     if(da)
@@ -226,7 +195,7 @@ void daDestroyP2(void *daptr, daDestroyFuncP2 destroyFunc, void *p1, void *p2)
     }
 }
 
-void daClear(void *daptr, daDestroyFunc destroyFunc)
+void daClear(void *daptr, dynDestroyFunc destroyFunc)
 {
     dynArray *da = daGet((char ***)daptr, 0);
     if(da)
@@ -236,7 +205,7 @@ void daClear(void *daptr, daDestroyFunc destroyFunc)
     }
 }
 
-void daClearP1(void *daptr, daDestroyFuncP1 destroyFunc, void *p1)
+void daClearP1(void *daptr, dynDestroyFuncP1 destroyFunc, void *p1)
 {
     dynArray *da = daGet((char ***)daptr, 0);
     if(da)
@@ -246,7 +215,7 @@ void daClearP1(void *daptr, daDestroyFuncP1 destroyFunc, void *p1)
     }
 }
 
-void daClearP2(void *daptr, daDestroyFuncP2 destroyFunc, void *p1, void *p2)
+void daClearP2(void *daptr, dynDestroyFuncP2 destroyFunc, void *p1, void *p2)
 {
     dynArray *da = daGet((char ***)daptr, 0);
     if(da)
@@ -284,7 +253,7 @@ void daUnshift(void *daptr, void *p)
     da->size++;
 }
 
-DYNAMIC_ARRAY_SIZE_TYPE daPush(void *daptr, void *entry)
+dynSize daPush(void *daptr, void *entry)
 {
     dynArray *da = daMakeRoom(daptr, 1);
     da->values[da->size++] = entry;
@@ -304,7 +273,7 @@ void *daPop(void *daptr)
 // ------------------------------------------------------------------------------------------------
 // Random access manipulation
 
-void daInsert(void *daptr, DYNAMIC_ARRAY_SIZE_TYPE index, void *p)
+void daInsert(void *daptr, dynSize index, void *p)
 {
     dynArray *da = daMakeRoom(daptr, 1);
     if((index < 0) || (!da->size) || (index >= da->size))
@@ -319,7 +288,7 @@ void daInsert(void *daptr, DYNAMIC_ARRAY_SIZE_TYPE index, void *p)
     }
 }
 
-void daErase(void *daptr, DYNAMIC_ARRAY_SIZE_TYPE index)
+void daErase(void *daptr, dynSize index)
 {
     dynArray *da = daGet((char ***)daptr, 0);
     if(!da)
@@ -334,28 +303,28 @@ void daErase(void *daptr, DYNAMIC_ARRAY_SIZE_TYPE index)
 // ------------------------------------------------------------------------------------------------
 // Size manipulation
 
-void daSetSize(void *daptr, DYNAMIC_ARRAY_SIZE_TYPE newSize, daDestroyFunc destroyFunc)
+void daSetSize(void *daptr, dynSize newSize, dynDestroyFunc destroyFunc)
 {
     dynArray *da = daGet((char ***)daptr, 1);
     daClearRange(da, newSize, da->size, destroyFunc);
     daChangeSize(daptr, newSize);
 }
 
-void daSetSizeP1(void *daptr, DYNAMIC_ARRAY_SIZE_TYPE newSize, daDestroyFuncP1 destroyFunc, void *p1)
+void daSetSizeP1(void *daptr, dynSize newSize, dynDestroyFuncP1 destroyFunc, void *p1)
 {
     dynArray *da = daGet((char ***)daptr, 1);
     daClearRangeP1(da, newSize, da->size, destroyFunc, p1);
     daChangeSize(daptr, newSize);
 }
 
-void daSetSizeP2(void *daptr, DYNAMIC_ARRAY_SIZE_TYPE newSize, daDestroyFuncP2 destroyFunc, void *p1, void *p2)
+void daSetSizeP2(void *daptr, dynSize newSize, dynDestroyFuncP2 destroyFunc, void *p1, void *p2)
 {
     dynArray *da = daGet((char ***)daptr, 1);
     daClearRangeP2(da, newSize, da->size, destroyFunc, p1, p2);
     daChangeSize(daptr, newSize);
 }
 
-DYNAMIC_ARRAY_SIZE_TYPE daSize(void *daptr)
+dynSize daSize(void *daptr)
 {
     dynArray *da = daGet((char ***)daptr, 0);
     if(da)
@@ -363,28 +332,28 @@ DYNAMIC_ARRAY_SIZE_TYPE daSize(void *daptr)
     return 0;
 }
 
-void daSetCapacity(void *daptr, DYNAMIC_ARRAY_SIZE_TYPE newCapacity, daDestroyFunc destroyFunc)
+void daSetCapacity(void *daptr, dynSize newCapacity, dynDestroyFunc destroyFunc)
 {
     dynArray *da = daGet((char ***)daptr, 1);
     daClearRange(da, newCapacity, da->size, destroyFunc);
     daChangeCapacity(newCapacity, daptr);
 }
 
-void daSetCapacityP1(void *daptr, DYNAMIC_ARRAY_SIZE_TYPE newCapacity, daDestroyFuncP1 destroyFunc, void *p1)
+void daSetCapacityP1(void *daptr, dynSize newCapacity, dynDestroyFuncP1 destroyFunc, void *p1)
 {
     dynArray *da = daGet((char ***)daptr, 1);
     daClearRangeP1(da, newCapacity, da->size, destroyFunc, p1);
     daChangeCapacity(newCapacity, daptr);
 }
 
-void daSetCapacityP2(void *daptr, DYNAMIC_ARRAY_SIZE_TYPE newCapacity, daDestroyFuncP2 destroyFunc, void *p1, void *p2)
+void daSetCapacityP2(void *daptr, dynSize newCapacity, dynDestroyFuncP2 destroyFunc, void *p1, void *p2)
 {
     dynArray *da = daGet((char ***)daptr, 1);
     daClearRangeP2(da, newCapacity, da->size, destroyFunc, p1, p2);
     daChangeCapacity(newCapacity, daptr);
 }
 
-DYNAMIC_ARRAY_SIZE_TYPE daCapacity(void *daptr)
+dynSize daCapacity(void *daptr)
 {
     dynArray *da = daGet((char ***)daptr, 0);
     if(da)
