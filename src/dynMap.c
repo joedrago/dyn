@@ -294,7 +294,7 @@ void dmEraseString(void *dmptr, const char *key, dmDestroyFunc destroyFunc)
             }
             else
             {
-                dm->table[index]->next = dm->table[index] = entry->next;
+                dm->table[index] = entry->next;
             }
             value = (char**)(dm->values + (entry->index * dm->valueSize));
             if(destroyFunc && *value)
@@ -324,7 +324,7 @@ void dmEraseInteger(void *dmptr, int key, dmDestroyFunc destroyFunc)
             }
             else
             {
-                dm->table[index]->next = dm->table[index] = entry->next;
+                dm->table[index] = entry->next;
             }
             value = (char**)(dm->values + (entry->index * dm->valueSize));
             if(destroyFunc && *value)
