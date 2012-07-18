@@ -34,12 +34,14 @@ typedef struct dynMapEntry
         long long value64;
     };
     struct dynMapEntry *next;
+    dynMapHash hash;
 } dynMapEntry;
 
 typedef struct dynMap
 {
-    dynMapEntry **table; // Hash table, .width in size
-    dynSize width;       // width of table
+    dynMapEntry **table; // Hash table daArray
+    dynSize split;       // Linear Hashing 'split'
+    dynSize level;       // Linear Hashing 'level'
     int keyType;
 } dynMap;
 
@@ -53,7 +55,9 @@ void dmEraseString(dynMap *dm, const char *key, dynDestroyFunc destroyFunc);
 
 dynMapEntry *dmGetInteger(dynMap *dm, dynInt key);
 int dmHasInteger(dynMap *dm, dynInt key);
-void dmEraseInteger(dynMap *dm, int key, dynDestroyFunc destroyFunc);
+void dmEraseInteger(dynMap *dm, dynInt key, dynDestroyFunc destroyFunc);
+
+void dmDebug(dynMap *dm);
 
 // Convenience macros
 

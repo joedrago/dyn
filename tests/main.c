@@ -475,12 +475,17 @@ void test_dmGetS()
 void test_dmGetI()
 {
     dynMap *dm = dmCreate(KEYTYPE_INTEGER, 0);
-    dmGetI2I(dm, 15) = 150;
-    dmGetI2I(dm, 16) = 160;
-    dmGetI2I(dm, 17) = 170;
-    printf("15: %d\n", dmGetI2I(dm, 15));
-    printf("16: %d\n", dmGetI2I(dm, 16));
-    printf("17: %d\n", dmGetI2I(dm, 17));
+    int i;
+    dmDebug(dm);
+    for(i = 0; i < 63; ++i)
+    {
+        dmGetI2I(dm, i * 16) = i * 10;
+        dmDebug(dm);
+    }
+    for(i = 0; i < 63; ++i)
+    {
+        printf("%d: %d\n", i * 16, dmGetI2I(dm, i * 16));
+    }
     printf("has index 15: %d\n", dmHasI(dm, 15));
     printf("has index 20: %d\n", dmHasI(dm, 20));
     dmEraseInteger(dm, 15, NULL);
@@ -502,38 +507,38 @@ int main(int argc, char **argv)
 {
     int prevErrors = 0;
 
-    TEST(daCreate);
-    TEST(daDestroy);
-    TEST(daDestroyP1);
-    TEST(daDestroyP2);
-    TEST(daClear);
-    TEST(daClearP1);
-    TEST(daClearP2);
-    TEST(daShift);
-    TEST(daUnshift);
-    TEST(daPush);
-    TEST(daPop);
-    TEST(daInsert);
-    TEST(daErase);
-    TEST(daEraseP1);
-    TEST(daEraseP2);
-    TEST(daSetSize);
-    TEST(daSetSizeP1);
-    TEST(daSetSizeP2);
-    TEST(daSize);
-    TEST(daSetCapacity);
-    TEST(daSetCapacityP1);
-    TEST(daSetCapacityP2);
-    TEST(daCapacity);
-    TEST(daSquash);
+    //TEST(daCreate);
+    //TEST(daDestroy);
+    //TEST(daDestroyP1);
+    //TEST(daDestroyP2);
+    //TEST(daClear);
+    //TEST(daClearP1);
+    //TEST(daClearP2);
+    //TEST(daShift);
+    //TEST(daUnshift);
+    //TEST(daPush);
+    //TEST(daPop);
+    //TEST(daInsert);
+    //TEST(daErase);
+    //TEST(daEraseP1);
+    //TEST(daEraseP2);
+    //TEST(daSetSize);
+    //TEST(daSetSizeP1);
+    //TEST(daSetSizeP2);
+    //TEST(daSize);
+    //TEST(daSetCapacity);
+    //TEST(daSetCapacityP1);
+    //TEST(daSetCapacityP2);
+    //TEST(daCapacity);
+    //TEST(daSquash);
 
-    TEST(dsCreate);
-    TEST(dsClear);
-    TEST(dsCopy);
-    TEST(dsPrintf);
-    TEST(dsSetLength);
-    TEST(dsCalcLength);
-    TEST(dsSetCapacity);
+    //TEST(dsCreate);
+    //TEST(dsClear);
+    //TEST(dsCopy);
+    //TEST(dsPrintf);
+    //TEST(dsSetLength);
+    //TEST(dsCalcLength);
+    //TEST(dsSetCapacity);
 
     TEST(dmGetS);
     TEST(dmGetI);
