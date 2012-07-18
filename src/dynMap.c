@@ -39,7 +39,7 @@ static unsigned int djb2int(dynInt i);
 // ------------------------------------------------------------------------------------------------
 // Constants and Macros
 
-#define BUCKET_SET_COUNT 4 // "N" on Wikipedia's explanation of linear hashes
+#define BUCKET_SET_COUNT 2 // "N" on Wikipedia's explanation of linear hashes
 
 // ------------------------------------------------------------------------------------------------
 // Internal helper functions
@@ -62,7 +62,9 @@ static dynSize linearHashCompute(dynMap *dm, dynMapHash hash)
 {
     dynSize addr = hash % linearHashMod(dm->level);
     if(addr < dm->split)
+    {
         addr = hash % linearHashMod(dm->level + 1);
+    }
     return addr;
 }
 
@@ -86,27 +88,28 @@ void dmDebug(dynMap *dm)
     int totalSlots = daSize(&dm->table);
     int slotCount = 0;
     int worstSlot = 0;
-    printf("-- dm level:%d split:%d width:%d ", dm->level, dm->split, daSize(&dm->table));
+    //printf("--\n");
     for(tableIndex = 0; tableIndex < totalSlots; ++tableIndex)
     {
         dynMapEntry *entry = dm->table[tableIndex];
-        printf(" * slot %d\n", tableIndex);
+        //printf(" * slot %d\n", tableIndex);
         slotCount = 0;
         while(entry)
         {
             totalEntries++;
             slotCount++;
 
-            if(dm->keyType == KEYTYPE_STRING)
-                printf("   . hash %d key %s\n", entry->hash, entry->keyStr);
-            else
-                printf("   . hash %d key %d\n", entry->hash, entry->keyInt);
+//            if(dm->keyType == KEYTYPE_STRING)
+//                printf("   . hash %d key %s\n", entry->hash, entry->keyStr);
+//            else
+//                printf("   . hash %d key %d\n", entry->hash, entry->keyInt);
 
             entry = entry->next;
         }
         if(worstSlot < slotCount)
             worstSlot = slotCount;
     }
+    printf("* dm level:%d width:%d split:%d ", dm->level, daSize(&dm->table), dm->split);
     printf(" total %d, width %d, avg %3.3f per bucket (worst %d)\n", totalEntries, totalSlots, (float)totalEntries / totalSlots, worstSlot);
 }
 
@@ -155,15 +158,32 @@ static dynMapEntry *dmNewEntry(dynMap *dm, dynMapHash hash, void *key)
 
 static void dmRewindSplit(dynMap *dm)
 {
-    // TODO: implement
+    dynMapEntry *chain;
+    dynSize chainIndex;
+    dynSize chainIndexEnd;
 
-    //dynMapEntry *chain = dm->table[dm->split];
-    //dm->table[dm->split] = NULL;
+    --dm->split;
+    if(dm->split < 0)
+    {
+        --dm->level;
+        chainIndex = linearHashMod(dm->level + 2) - 1;   // rebucket all of the level+2 entries that are now out of reach
+        chainIndexEnd = linearHashMod(dm->level + 1) - 1;
+        dm->split = linearHashMod(dm->level) - 1;
+        daSetSize(&dm->table, linearHashMod(dm->level + 1), NULL);
+    }
+    else
+    {
+        chainIndex = chainIndexEnd = dm->split;
+    }
 
-    //--dm->split;
-    //if(dm->split < 0)
-    //{
-    //}
+    for(; chainIndex >= chainIndexEnd; --chainIndex)
+    {
+        chain = dm->table[chainIndex];
+        dm->table[chainIndex] = NULL;
+
+        dmBucketEntryChain(dm, chain);
+    }
+
 }
 
 // ------------------------------------------------------------------------------------------------

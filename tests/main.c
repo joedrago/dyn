@@ -466,27 +466,31 @@ void test_dmGetS()
     dmGetS2P(dm, "Foo") = "A";
     dmGetS2P(dm, "Bar") = "B";
     dmGetS2P(dm, "Baz") = "C";
-    printf("Foo: %s\n", dmGetS2P(dm, "Foo"));
-    printf("Bar: %s\n", dmGetS2P(dm, "Bar"));
-    printf("Baz: %s\n", dmGetS2P(dm, "Baz"));
+    printf("Foo: %s\n", (char *)dmGetS2P(dm, "Foo"));
+    printf("Bar: %s\n", (char *)dmGetS2P(dm, "Bar"));
+    printf("Baz: %s\n", (char *)dmGetS2P(dm, "Baz"));
     dmDestroy(dm, NULL);
 }
 
+#define GETI_COUNT 100000
 void test_dmGetI()
 {
     dynMap *dm = dmCreate(KEYTYPE_INTEGER, 0);
     int i;
     dmDebug(dm);
-    for(i = 0; i < 10; ++i)
+    for(i = 0; i < GETI_COUNT; ++i)
     {
         dmGetI2I(dm, i * 16) = i * 10;
-        dmDebug(dm);
+        //dmDebug(dm);
     }
-    for(i = 0; i < 10; ++i)
+    for(i = 0; i < GETI_COUNT; ++i)
     {
         dmEraseInteger(dm, i * 16, NULL);
-        dmDebug(dm);
+        //dmDebug(dm);
     }
+
+    dmDebug(dm);
+
     //for(i = 0; i < 100; ++i)
     //{
     //    printf("%d: %d\n", i, dmGetI2I(dm, i));
