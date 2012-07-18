@@ -13,10 +13,28 @@
 #include <stdio.h>
 
 // ------------------------------------------------------------------------------------------------
-// Forward declarations
+// Hash function declarations
 
+#define USE_MURMUR3
+//#define USE_DJB2
+
+#ifdef USE_MURMUR3
 static dynMapHash murmur3string(const unsigned char *str);
 static dynMapHash murmur3int(dynInt i);
+#define HASHSTRING murmur3string
+#define HASHINT murmur3int
+#endif
+
+#ifdef USE_DJB2
+static dynMapHash djb2string(const unsigned char *str);
+static unsigned int djb2int(dynInt i);
+#define HASHSTRING djb2string
+#define HASHINT djb2int
+#endif
+
+#ifndef HASHSTRING
+#error Please choose a hash function!
+#endif
 
 // ------------------------------------------------------------------------------------------------
 // Constants and Macros
@@ -64,20 +82,32 @@ static void dmBucketEntryChain(dynMap *dm, dynMapEntry *chain)
 void dmDebug(dynMap *dm)
 {
     dynInt tableIndex;
-    printf("-- dm level:%d split:%d width:%d\n", dm->level, dm->split, daSize(&dm->table));
-    for(tableIndex = 0; tableIndex < daSize(&dm->table); ++tableIndex)
+    int totalEntries = 0;
+    int totalSlots = daSize(&dm->table);
+    int slotCount = 0;
+    int worstSlot = 0;
+    printf("-- dm level:%d split:%d width:%d ", dm->level, dm->split, daSize(&dm->table));
+    for(tableIndex = 0; tableIndex < totalSlots; ++tableIndex)
     {
         dynMapEntry *entry = dm->table[tableIndex];
         printf(" * slot %d\n", tableIndex);
+        slotCount = 0;
         while(entry)
         {
+            totalEntries++;
+            slotCount++;
+
             if(dm->keyType == KEYTYPE_STRING)
                 printf("   . hash %d key %s\n", entry->hash, entry->keyStr);
             else
                 printf("   . hash %d key %d\n", entry->hash, entry->keyInt);
+
             entry = entry->next;
         }
+        if(worstSlot < slotCount)
+            worstSlot = slotCount;
     }
+    printf(" total %d, width %d, avg %3.3f per bucket (worst %d)\n", totalEntries, totalSlots, (float)totalEntries / totalSlots, worstSlot);
 }
 
 static dynMapEntry *dmNewEntry(dynMap *dm, dynMapHash hash, void *key)
@@ -87,6 +117,7 @@ static dynMapEntry *dmNewEntry(dynMap *dm, dynMapHash hash, void *key)
     dynMapEntry *chain;
     int found = 0;
 
+    // Create the new entry and bucket it
     entry = (dynMapEntry *)calloc(1, sizeof(*entry));
     switch(dm->keyType)
     {
@@ -101,9 +132,11 @@ static dynMapEntry *dmNewEntry(dynMap *dm, dynMapHash hash, void *key)
     entry->value64 = 0;
     dmBucketEntryChain(dm, entry);
 
+    // Steal the chain at the split boundary...
     chain = dm->table[dm->split];
     dm->table[dm->split] = NULL;
 
+    // ...advance the split...
     ++dm->split;
     lhm = linearHashMod(dm->level);
     if(dm->split == lhm)
@@ -113,34 +146,26 @@ static dynMapEntry *dmNewEntry(dynMap *dm, dynMapHash hash, void *key)
         dm->split = 0;
         daSetSize(&dm->table, linearHashMod(dm->level + 1), NULL);
     }
+
+    // ... and reattach the stolen chain.
     dmBucketEntryChain(dm, chain);
 
     return entry;
 }
 
-//static unsigned int djb2hash(const unsigned char *str)
-//{
-//    unsigned int hash = 5381;
-//    int c;
-//
-//    while (c = *str++)
-//        hash = ((hash << 5) + hash) + c; /* hash * 33 + c */
-//
-//    return hash;
-//}
-//
-//static unsigned int djb2int(dynInt i)
-//{
-//    const char *p = (const char *)&i;
-//    unsigned int hash = 5381;
-//
-//    hash = ((hash << 5) + hash) + p[0];
-//    hash = ((hash << 5) + hash) + p[1];
-//    hash = ((hash << 5) + hash) + p[2];
-//    hash = ((hash << 5) + hash) + p[3];
-//    return hash;
-//}
-//
+static void dmRewindSplit(dynMap *dm)
+{
+    // TODO: implement
+
+    //dynMapEntry *chain = dm->table[dm->split];
+    //dm->table[dm->split] = NULL;
+
+    //--dm->split;
+    //if(dm->split < 0)
+    //{
+    //}
+}
+
 // ------------------------------------------------------------------------------------------------
 // creation / destruction / cleanup
 
@@ -193,7 +218,7 @@ void dmClear(dynMap *dm, dynDestroyFunc destroyFunc)
 
 static dynMapEntry *dmFindString(dynMap *dm, const char *key, int autoCreate)
 {
-    dynMapHash hash = (dynMapHash)murmur3string(key);
+    dynMapHash hash = (dynMapHash)HASHSTRING(key);
     dynInt index = linearHashCompute(dm, hash);
     dynMapEntry *entry = dm->table[index];
     for( ; entry; entry = entry->next)
@@ -212,7 +237,7 @@ static dynMapEntry *dmFindString(dynMap *dm, const char *key, int autoCreate)
 
 static dynMapEntry *dmFindInteger(dynMap *dm, dynInt key, int autoCreate)
 {
-    dynMapHash hash = (dynMapHash)murmur3int(key);
+    dynMapHash hash = (dynMapHash)HASHINT(key);
     dynInt index = linearHashCompute(dm, hash);
     dynMapEntry *entry = dm->table[index];
     for( ; entry; entry = entry->next)
@@ -241,7 +266,7 @@ int dmHasString(dynMap *dm, const char *key)
 
 void dmEraseString(dynMap *dm, const char *key, dynDestroyFunc destroyFunc)
 {
-    dynMapHash hash = (dynMapHash)murmur3string(key);
+    dynMapHash hash = (dynMapHash)HASHSTRING(key);
     dynInt index = linearHashCompute(dm, hash);
     dynMapEntry *prev = NULL;
     dynMapEntry *entry = dm->table[index];
@@ -260,6 +285,7 @@ void dmEraseString(dynMap *dm, const char *key, dynDestroyFunc destroyFunc)
             if(destroyFunc && entry->valuePtr)
                 destroyFunc(entry->valuePtr);
             dmDestroyEntry(dm, entry);
+            dmRewindSplit(dm);
             return;
         }
     }
@@ -277,7 +303,7 @@ int dmHasInteger(dynMap *dm, dynInt key)
 
 void dmEraseInteger(dynMap *dm, dynInt key, dynDestroyFunc destroyFunc)
 {
-    dynMapHash hash = (dynMapHash)murmur3int(key);
+    dynMapHash hash = (dynMapHash)HASHINT(key);
     dynInt index = linearHashCompute(dm, hash);
     dynMapEntry *prev = NULL;
     dynMapEntry *entry = dm->table[index];
@@ -296,12 +322,13 @@ void dmEraseInteger(dynMap *dm, dynInt key, dynDestroyFunc destroyFunc)
             if(destroyFunc && entry->valuePtr)
                 destroyFunc(entry->valuePtr);
             dmDestroyEntry(dm, entry);
+            dmRewindSplit(dm);
             return;
         }
     }
 }
 
-// Everything after this line is the Murmur3 implementation.
+#ifdef USE_MURMUR3
 
 //-----------------------------------------------------------------------------
 // MurmurHash3 was written by Austin Appleby, and is placed in the public
@@ -668,8 +695,6 @@ void MurmurHash3_x64_128 ( const void * key, int len,
     ((uint64_t*)out)[1] = h2;
 }
 
-//-----------------------------------------------------------------------------
-
 static dynMapHash murmur3string(const unsigned char *str)
 {
     dynMapHash hash;
@@ -683,3 +708,34 @@ static dynMapHash murmur3int(dynInt i)
     MurmurHash3_x86_32(&i, sizeof(dynInt), 0, &hash);
     return hash;
 }
+
+#endif
+
+//-----------------------------------------------------------------------------
+
+#ifdef USE_DJB2
+
+static dynMapHash djb2string(const unsigned char *str)
+{
+    dynMapHash hash = 5381;
+    int c;
+
+    while (c = *str++)
+        hash = ((hash << 5) + hash) + c; /* hash * 33 + c */
+
+    return hash;
+}
+
+static unsigned int djb2int(dynInt i)
+{
+    const char *p = (const char *)&i;
+    unsigned int hash = 5381;
+
+    hash = ((hash << 5) + hash) + p[0];
+    hash = ((hash << 5) + hash) + p[1];
+    hash = ((hash << 5) + hash) + p[2];
+    hash = ((hash << 5) + hash) + p[3];
+    return hash;
+}
+
+#endif

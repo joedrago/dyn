@@ -477,19 +477,24 @@ void test_dmGetI()
     dynMap *dm = dmCreate(KEYTYPE_INTEGER, 0);
     int i;
     dmDebug(dm);
-    for(i = 0; i < 63; ++i)
+    for(i = 0; i < 10; ++i)
     {
         dmGetI2I(dm, i * 16) = i * 10;
         dmDebug(dm);
     }
-    for(i = 0; i < 63; ++i)
+    for(i = 0; i < 10; ++i)
     {
-        printf("%d: %d\n", i * 16, dmGetI2I(dm, i * 16));
+        dmEraseInteger(dm, i * 16, NULL);
+        dmDebug(dm);
     }
-    printf("has index 15: %d\n", dmHasI(dm, 15));
-    printf("has index 20: %d\n", dmHasI(dm, 20));
-    dmEraseInteger(dm, 15, NULL);
-    printf("has index 15: %d\n", dmHasI(dm, 15));
+    //for(i = 0; i < 100; ++i)
+    //{
+    //    printf("%d: %d\n", i, dmGetI2I(dm, i));
+    //}
+    //printf("has index 15: %d\n", dmHasI(dm, 15));
+    //printf("has index 20: %d\n", dmHasI(dm, 20));
+    //dmEraseInteger(dm, 15, NULL);
+    //printf("has index 15: %d\n", dmHasI(dm, 15));
     dmDestroy(dm, NULL);
 }
 
