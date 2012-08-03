@@ -39,42 +39,32 @@ static unsigned int djb2int(dynInt i);
 // ------------------------------------------------------------------------------------------------
 // Constants and Macros
 
-#define BUCKET_SET_COUNT 2 // "N" on Wikipedia's explanation of linear hashes
+#define INITIAL_MODULUS 2 // "N" on Wikipedia's explanation of linear hashes
 
 // ------------------------------------------------------------------------------------------------
 // Internal helper functions
 
-// returns x^y
-static dynSize power(dynSize x, dynSize y)
-{
-    dynSize z = 1;
-    while(y--)
-        z *= x;
-    return z;
-}
-
-static dynSize linearHashMod(dynSize level)
-{
-    return (BUCKET_SET_COUNT * power(2, level));
-}
-
 static dynSize linearHashCompute(dynMap *dm, dynMapHash hash)
 {
-    dynSize addr = hash % linearHashMod(dm->level);
+    dynSize addr = hash % dm->mod;
     if(addr < dm->split)
     {
-        addr = hash % linearHashMod(dm->level + 1);
+        addr = hash % (dm->mod << 1);
     }
     return addr;
 }
 
 static void dmBucketEntryChain(dynMap *dm, dynMapEntry *chain)
 {
+    if(!chain)
+        printf(" * nothing to do\n");
     while(chain)
     {
         dynMapEntry *entry = chain;
         dynInt tableIndex = linearHashCompute(dm, entry->hash);
         chain = chain->next;
+
+        printf(" * bucketing into tableIndex %d\n", tableIndex);
 
         entry->next = dm->table[tableIndex];
         dm->table[tableIndex] = entry;
@@ -88,11 +78,11 @@ void dmDebug(dynMap *dm)
     int totalSlots = daSize(&dm->table);
     int slotCount = 0;
     int worstSlot = 0;
-    //printf("--\n");
+    printf("\n                slots: ");
     for(tableIndex = 0; tableIndex < totalSlots; ++tableIndex)
     {
         dynMapEntry *entry = dm->table[tableIndex];
-        //printf(" * slot %d\n", tableIndex);
+        //printf(" %d:", tableIndex);
         slotCount = 0;
         while(entry)
         {
@@ -106,19 +96,31 @@ void dmDebug(dynMap *dm)
 
             entry = entry->next;
         }
+        if(tableIndex == dm->split)
+            printf(". ");
+        if(tableIndex == (dm->split+dm->mod))
+            printf("      ...      ");
+        if((tableIndex % 5) == 0)
+            printf("%d:", tableIndex);
+        if(tableIndex < dm->mod)
+            printf("[%d] ", slotCount);
+        else
+            printf("(%d) ", slotCount);
         if(worstSlot < slotCount)
             worstSlot = slotCount;
     }
-    printf("* dm level:%d width:%d split:%d ", dm->level, daSize(&dm->table), dm->split);
-    printf(" total %d, width %d, avg %3.3f per bucket (worst %d)\n", totalEntries, totalSlots, (float)totalEntries / totalSlots, worstSlot);
+    printf("\n");
+    printf("%2.2d              dm mod:%d width:%d split:%d ", totalEntries, dm->mod, daSize(&dm->table), dm->split);
+    printf(" total %d, width %d, avg %3.3f per bucket (worst %d)\n\n", totalEntries, totalSlots, (float)totalEntries / totalSlots, worstSlot);
 }
 
 static dynMapEntry *dmNewEntry(dynMap *dm, dynMapHash hash, void *key)
 {
-    dynSize lhm;
     dynMapEntry *entry;
     dynMapEntry *chain;
     int found = 0;
+
+    dynSize prevSplit = dm->split;
 
     // Create the new entry and bucket it
     entry = (dynMapEntry *)calloc(1, sizeof(*entry));
@@ -133,22 +135,27 @@ static dynMapEntry *dmNewEntry(dynMap *dm, dynMapHash hash, void *key)
     }
     entry->hash = hash;
     entry->value64 = 0;
+    printf("bucketing dmNewEntry:\n");
     dmBucketEntryChain(dm, entry);
+
+    dmDebug(dm);
 
     // Steal the chain at the split boundary...
     chain = dm->table[dm->split];
     dm->table[dm->split] = NULL;
+    printf("rebucketing split %d:\n", dm->split);
 
     // ...advance the split...
     ++dm->split;
-    lhm = linearHashMod(dm->level);
-    if(dm->split == lhm)
+    if(dm->split == dm->mod)
     {
         // It is time to grow our linear hash!
-        ++dm->level;
+        dm->mod *= 2;
         dm->split = 0;
-        daSetSize(&dm->table, linearHashMod(dm->level + 1), NULL);
+        daSetSize(&dm->table, dm->mod << 1, NULL);
     }
+
+    printf("changing split: %d -> %d\n", prevSplit, dm->split);
 
     // ... and reattach the stolen chain.
     dmBucketEntryChain(dm, chain);
@@ -159,31 +166,26 @@ static dynMapEntry *dmNewEntry(dynMap *dm, dynMapHash hash, void *key)
 static void dmRewindSplit(dynMap *dm)
 {
     dynMapEntry *chain;
-    dynSize chainIndex;
-    dynSize chainIndexEnd;
+    dynSize indexToRebucket;
+
+    dynSize prevSplit = dm->split;
 
     --dm->split;
     if(dm->split < 0)
     {
-        --dm->level;
-        chainIndex = linearHashMod(dm->level + 2) - 1;   // rebucket all of the level+2 entries that are now out of reach
-        chainIndexEnd = linearHashMod(dm->level + 1) - 1;
-        dm->split = linearHashMod(dm->level) - 1;
-        daSetSize(&dm->table, linearHashMod(dm->level + 1), NULL);
-    }
-    else
-    {
-        chainIndex = chainIndexEnd = dm->split;
+        dm->mod >>= 1;
+        dm->split = dm->mod - 1;
+        daSetSize(&dm->table, dm->mod << 1, NULL);
     }
 
-    for(; chainIndex >= chainIndexEnd; --chainIndex)
-    {
-        chain = dm->table[chainIndex];
-        dm->table[chainIndex] = NULL;
+    indexToRebucket = dm->split + dm->mod;
 
-        dmBucketEntryChain(dm, chain);
-    }
+    chain = dm->table[indexToRebucket];
+    dm->table[indexToRebucket] = NULL;
 
+    printf("changing split: %d -> %d\n", prevSplit, dm->split);
+    printf("rebucketing rewound split %d:\n", indexToRebucket);
+    dmBucketEntryChain(dm, chain);
 }
 
 // ------------------------------------------------------------------------------------------------
@@ -194,8 +196,8 @@ dynMap *dmCreate(dmKeyType keyType, dynInt estimatedSize)
     dynMap *dm = (dynMap *)calloc(1, sizeof(*dm));
     dm->keyType = keyType;
     dm->split = 0;
-    dm->level = 0;
-    daSetSize(&dm->table, linearHashMod(dm->level + 1), NULL);
+    dm->mod   = INITIAL_MODULUS;
+    daSetSize(&dm->table, dm->mod << 1, NULL);
     return dm;
 }
 

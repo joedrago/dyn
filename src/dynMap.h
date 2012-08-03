@@ -41,7 +41,7 @@ typedef struct dynMap
 {
     dynMapEntry **table; // Hash table daArray
     dynSize split;       // Linear Hashing 'split'
-    dynSize level;       // Linear Hashing 'level'
+    dynSize mod;         // pre-split modulus (use mod*2 for overflow)
     int keyType;
 } dynMap;
 

@@ -472,7 +472,7 @@ void test_dmGetS()
     dmDestroy(dm, NULL);
 }
 
-#define GETI_COUNT 100000
+#define GETI_COUNT 20
 void test_dmGetI()
 {
     dynMap *dm = dmCreate(KEYTYPE_INTEGER, 0);
@@ -480,13 +480,16 @@ void test_dmGetI()
     dmDebug(dm);
     for(i = 0; i < GETI_COUNT; ++i)
     {
+        printf("\n----\n\n");
         dmGetI2I(dm, i * 16) = i * 10;
-        //dmDebug(dm);
+        dmDebug(dm);
     }
+    dmDebug(dm);
     for(i = 0; i < GETI_COUNT; ++i)
     {
+        printf("\n----\n\n");
         dmEraseInteger(dm, i * 16, NULL);
-        //dmDebug(dm);
+        dmDebug(dm);
     }
 
     dmDebug(dm);
@@ -549,7 +552,7 @@ int main(int argc, char **argv)
     //TEST(dsCalcLength);
     //TEST(dsSetCapacity);
 
-    TEST(dmGetS);
+    //TEST(dmGetS);
     TEST(dmGetI);
 
     printf("\nTotal errors: %d\n\n", totalErrors);
