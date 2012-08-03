@@ -43,6 +43,7 @@ typedef struct dynMap
     dynSize split;       // Linear Hashing 'split'
     dynSize mod;         // pre-split modulus (use mod*2 for overflow)
     int keyType;
+    int count;           // count tracking for convenience
 } dynMap;
 
 dynMap *dmCreate(dmKeyType keyType, dynInt estimatedSize);
@@ -56,8 +57,6 @@ void dmEraseString(dynMap *dm, const char *key, dynDestroyFunc destroyFunc);
 dynMapEntry *dmGetInteger(dynMap *dm, dynInt key);
 int dmHasInteger(dynMap *dm, dynInt key);
 void dmEraseInteger(dynMap *dm, dynInt key, dynDestroyFunc destroyFunc);
-
-void dmDebug(dynMap *dm);
 
 // Convenience macros
 

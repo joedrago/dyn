@@ -10,7 +10,15 @@
 
 #include <stdlib.h>
 #include <string.h>
-#include <stdio.h>
+
+// A quick thanks to the author or this web page:
+//
+// http://www.concentric.net/~ttwang/tech/sorthash.htm
+//
+// It seemed to offer the most straightforward explanation of how to implement this that I could
+// find on the Internet, with its only flaw being that their example explaining a split uses
+// bucket 2 at a time when their modulus is also 2, making it unclear that a rewind needs to
+// rebucket split+mod instead of split*2 (or anything else). I eventually figured it out.
 
 // ------------------------------------------------------------------------------------------------
 // Hash function declarations
@@ -39,13 +47,19 @@ static unsigned int djb2int(dynInt i);
 // ------------------------------------------------------------------------------------------------
 // Constants and Macros
 
-#define INITIAL_MODULUS 2 // "N" on Wikipedia's explanation of linear hashes
+#define INITIAL_MODULUS 2  // "N" on Wikipedia's explanation of linear hashes
+#define SHRINK_FACTOR   4  // How many times bigger does the table capacity have to be to its
+                           // width to cause the table to shrink?
 
 // ------------------------------------------------------------------------------------------------
 // Internal helper functions
 
 static dynSize linearHashCompute(dynMap *dm, dynMapHash hash)
 {
+    // Use a simple modulus on the hash, and if the resulting bucket is behind
+    // "the split" (putting it in the front partition instead of the expansion),
+    // rehash with the next-size-up modulus.
+
     dynSize addr = hash % dm->mod;
     if(addr < dm->split)
     {
@@ -54,64 +68,19 @@ static dynSize linearHashCompute(dynMap *dm, dynMapHash hash)
     return addr;
 }
 
+// This is used by dmNewEntry to chain a new entry into a bucket, and it is used
+// by the split and rewind functions to rebucket everything in a single bucket.
 static void dmBucketEntryChain(dynMap *dm, dynMapEntry *chain)
 {
-    if(!chain)
-        printf(" * nothing to do\n");
     while(chain)
     {
         dynMapEntry *entry = chain;
         dynInt tableIndex = linearHashCompute(dm, entry->hash);
         chain = chain->next;
 
-        printf(" * bucketing into tableIndex %d\n", tableIndex);
-
         entry->next = dm->table[tableIndex];
         dm->table[tableIndex] = entry;
     }
-}
-
-void dmDebug(dynMap *dm)
-{
-    dynInt tableIndex;
-    int totalEntries = 0;
-    int totalSlots = daSize(&dm->table);
-    int slotCount = 0;
-    int worstSlot = 0;
-    printf("\n                slots: ");
-    for(tableIndex = 0; tableIndex < totalSlots; ++tableIndex)
-    {
-        dynMapEntry *entry = dm->table[tableIndex];
-        //printf(" %d:", tableIndex);
-        slotCount = 0;
-        while(entry)
-        {
-            totalEntries++;
-            slotCount++;
-
-//            if(dm->keyType == KEYTYPE_STRING)
-//                printf("   . hash %d key %s\n", entry->hash, entry->keyStr);
-//            else
-//                printf("   . hash %d key %d\n", entry->hash, entry->keyInt);
-
-            entry = entry->next;
-        }
-        if(tableIndex == dm->split)
-            printf(". ");
-        if(tableIndex == (dm->split+dm->mod))
-            printf("      ...      ");
-        if((tableIndex % 5) == 0)
-            printf("%d:", tableIndex);
-        if(tableIndex < dm->mod)
-            printf("[%d] ", slotCount);
-        else
-            printf("(%d) ", slotCount);
-        if(worstSlot < slotCount)
-            worstSlot = slotCount;
-    }
-    printf("\n");
-    printf("%2.2d              dm mod:%d width:%d split:%d ", totalEntries, dm->mod, daSize(&dm->table), dm->split);
-    printf(" total %d, width %d, avg %3.3f per bucket (worst %d)\n\n", totalEntries, totalSlots, (float)totalEntries / totalSlots, worstSlot);
 }
 
 static dynMapEntry *dmNewEntry(dynMap *dm, dynMapHash hash, void *key)
@@ -119,8 +88,6 @@ static dynMapEntry *dmNewEntry(dynMap *dm, dynMapHash hash, void *key)
     dynMapEntry *entry;
     dynMapEntry *chain;
     int found = 0;
-
-    dynSize prevSplit = dm->split;
 
     // Create the new entry and bucket it
     entry = (dynMapEntry *)calloc(1, sizeof(*entry));
@@ -135,15 +102,11 @@ static dynMapEntry *dmNewEntry(dynMap *dm, dynMapHash hash, void *key)
     }
     entry->hash = hash;
     entry->value64 = 0;
-    printf("bucketing dmNewEntry:\n");
     dmBucketEntryChain(dm, entry);
-
-    dmDebug(dm);
 
     // Steal the chain at the split boundary...
     chain = dm->table[dm->split];
     dm->table[dm->split] = NULL;
-    printf("rebucketing split %d:\n", dm->split);
 
     // ...advance the split...
     ++dm->split;
@@ -155,11 +118,10 @@ static dynMapEntry *dmNewEntry(dynMap *dm, dynMapHash hash, void *key)
         daSetSize(&dm->table, dm->mod << 1, NULL);
     }
 
-    printf("changing split: %d -> %d\n", prevSplit, dm->split);
-
     // ... and reattach the stolen chain.
     dmBucketEntryChain(dm, chain);
 
+    ++dm->count;
     return entry;
 }
 
@@ -168,23 +130,24 @@ static void dmRewindSplit(dynMap *dm)
     dynMapEntry *chain;
     dynSize indexToRebucket;
 
-    dynSize prevSplit = dm->split;
-
     --dm->split;
     if(dm->split < 0)
     {
         dm->mod >>= 1;
         dm->split = dm->mod - 1;
         daSetSize(&dm->table, dm->mod << 1, NULL);
+
+        // Time to shrink!
+        if((daSize(&dm->table) * SHRINK_FACTOR) < daCapacity(&dm->table))
+        {
+            daSetCapacity(&dm->table, daSize(&dm->table) * SHRINK_FACTOR, NULL); // Should be no need to destroy anything
+        }
     }
 
     indexToRebucket = dm->split + dm->mod;
-
     chain = dm->table[indexToRebucket];
     dm->table[indexToRebucket] = NULL;
 
-    printf("changing split: %d -> %d\n", prevSplit, dm->split);
-    printf("rebucketing rewound split %d:\n", indexToRebucket);
     dmBucketEntryChain(dm, chain);
 }
 
@@ -197,6 +160,7 @@ dynMap *dmCreate(dmKeyType keyType, dynInt estimatedSize)
     dm->keyType = keyType;
     dm->split = 0;
     dm->mod   = INITIAL_MODULUS;
+    dm->count = 0;
     daSetSize(&dm->table, dm->mod << 1, NULL);
     return dm;
 }
@@ -307,6 +271,7 @@ void dmEraseString(dynMap *dm, const char *key, dynDestroyFunc destroyFunc)
             if(destroyFunc && entry->valuePtr)
                 destroyFunc(entry->valuePtr);
             dmDestroyEntry(dm, entry);
+            --dm->count;
             dmRewindSplit(dm);
             return;
         }
@@ -344,6 +309,7 @@ void dmEraseInteger(dynMap *dm, dynInt key, dynDestroyFunc destroyFunc)
             if(destroyFunc && entry->valuePtr)
                 destroyFunc(entry->valuePtr);
             dmDestroyEntry(dm, entry);
+            --dm->count;
             dmRewindSplit(dm);
             return;
         }

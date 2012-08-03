@@ -472,36 +472,22 @@ void test_dmGetS()
     dmDestroy(dm, NULL);
 }
 
-#define GETI_COUNT 20
+#define GETI_COUNT 100000
 void test_dmGetI()
 {
     dynMap *dm = dmCreate(KEYTYPE_INTEGER, 0);
     int i;
-    dmDebug(dm);
+    printf("count: %d, mod: %d, split: %d, width: %d, capacity: %d\n", dm->count, dm->mod, dm->split, daSize(&dm->table), daCapacity(&dm->table));
     for(i = 0; i < GETI_COUNT; ++i)
     {
-        printf("\n----\n\n");
         dmGetI2I(dm, i * 16) = i * 10;
-        dmDebug(dm);
     }
-    dmDebug(dm);
+    printf("count: %d, mod: %d, split: %d, width: %d, capacity: %d\n", dm->count, dm->mod, dm->split, daSize(&dm->table), daCapacity(&dm->table));
     for(i = 0; i < GETI_COUNT; ++i)
     {
-        printf("\n----\n\n");
         dmEraseInteger(dm, i * 16, NULL);
-        dmDebug(dm);
     }
-
-    dmDebug(dm);
-
-    //for(i = 0; i < 100; ++i)
-    //{
-    //    printf("%d: %d\n", i, dmGetI2I(dm, i));
-    //}
-    //printf("has index 15: %d\n", dmHasI(dm, 15));
-    //printf("has index 20: %d\n", dmHasI(dm, 20));
-    //dmEraseInteger(dm, 15, NULL);
-    //printf("has index 15: %d\n", dmHasI(dm, 15));
+    printf("count: %d, mod: %d, split: %d, width: %d, capacity: %d\n", dm->count, dm->mod, dm->split, daSize(&dm->table), daCapacity(&dm->table));
     dmDestroy(dm, NULL);
 }
 
