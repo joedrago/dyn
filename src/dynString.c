@@ -11,7 +11,7 @@
 #include <string.h>
 #include <stdio.h>
 
-#ifdef WIN32
+#ifdef _WIN32
 #define va_copy(dest, src) ((void)((dest) = (src)))
 #endif
 
@@ -115,11 +115,35 @@ void dsDestroy(char **dsptr)
     }
 }
 
+void dsDestroyIndirect(char *ds)
+{
+    char *p = ds;
+    dsDestroy(&p);
+}
+
 void dsClear(char **dsptr)
 {
     dynString *ds = dsGet(dsptr, 1);
     ds->buffer[0] = 0;
     ds->length = 0;
+}
+
+char *dsDup(const char *text)
+{
+    char *dup = NULL;
+    dsCopy(&dup, text);
+    return dup;
+}
+
+char *dsDupf(const char *format, ...)
+{
+    char *dup = NULL;
+    va_list args;
+    va_start(args, format);
+    dsClear(&dup);
+    dsConcatv(&dup, format, args);
+    va_end(args);
+    return dup;
 }
 
 // ------------------------------------------------------------------------------------------------

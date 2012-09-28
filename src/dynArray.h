@@ -13,11 +13,13 @@
 // creation / destruction / cleanup
 void daCreate(void *daptr);
 void daDestroy(void *daptr, dynDestroyFunc destroyFunc);
+void daDestroyStrings(void *daptr);
 void daDestroyP1(void *daptr, dynDestroyFuncP1 destroyFunc, void *p1);
 void daDestroyP2(void *daptr, dynDestroyFuncP2 destroyFunc, void *p1, void *p2);
 void daClear(void *daptr, dynDestroyFunc destroyFunc);
 void daClearP1(void *daptr, dynDestroyFuncP1 destroyFunc, void *p1);
 void daClearP2(void *daptr, dynDestroyFuncP2 destroyFunc, void *p1, void *p2);
+void daClearStrings(void *daptr);
 
 // front/back manipulation
 void *daShift(void *daptr);

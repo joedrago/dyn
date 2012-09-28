@@ -15,7 +15,10 @@
 // creation / destruction / cleanup
 void dsCreate(char **dsptr);
 void dsDestroy(char **dsptr);
+void dsDestroyIndirect(char *ds);
 void dsClear(char **dsptr);
+char *dsDup(const char *text);
+char *dsDupf(const char *format, ...);
 
 // manipulation
 void dsCopyLen(char **dsptr, const char *text, dynSize len);

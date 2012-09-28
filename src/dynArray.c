@@ -6,6 +6,7 @@
 // ---------------------------------------------------------------------------
 
 #include "dynArray.h"
+#include "dynString.h"
 
 #include <stdlib.h>
 #include <string.h>
@@ -173,6 +174,11 @@ void daDestroy(void *daptr, dynDestroyFunc destroyFunc)
     }
 }
 
+void daDestroyStrings(void *daptr)
+{
+    daDestroy(daptr, dsDestroyIndirect);
+}
+
 void daDestroyP1(void *daptr, dynDestroyFuncP1 destroyFunc, void *p1)
 {
     dynArray *da = daGet((char ***)daptr, 0);
@@ -223,6 +229,11 @@ void daClearP2(void *daptr, dynDestroyFuncP2 destroyFunc, void *p1, void *p2)
         daClearRangeP2(da, 0, da->size, destroyFunc, p1, p2);
         da->size = 0;
     }
+}
+
+void daClearStrings(void *daptr)
+{
+    daClear(daptr, dsDestroyIndirect);
 }
 
 // ------------------------------------------------------------------------------------------------
