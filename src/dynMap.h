@@ -47,16 +47,16 @@ typedef struct dynMap
 } dynMap;
 
 dynMap *dmCreate(dmKeyType keyType, dynInt estimatedSize);
-void dmDestroy(dynMap *dm, dynDestroyFunc destroyFunc);
-void dmClear(dynMap *dm, dynDestroyFunc destroyFunc);
+void dmDestroy(dynMap *dm, void * /*dynDestroyFunc*/ destroyFunc);
+void dmClear(dynMap *dm, void * /*dynDestroyFunc*/ destroyFunc);
 
 dynMapEntry *dmGetString(dynMap *dm, const char *key);
 int dmHasString(dynMap *dm, const char *key);
-void dmEraseString(dynMap *dm, const char *key, dynDestroyFunc destroyFunc);
+void dmEraseString(dynMap *dm, const char *key, void * /*dynDestroyFunc*/ destroyFunc);
 
 dynMapEntry *dmGetInteger(dynMap *dm, dynInt key);
 int dmHasInteger(dynMap *dm, dynInt key);
-void dmEraseInteger(dynMap *dm, dynInt key, dynDestroyFunc destroyFunc);
+void dmEraseInteger(dynMap *dm, dynInt key, void * /*dynDestroyFunc*/ destroyFunc);
 
 // Convenience macros
 

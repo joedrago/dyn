@@ -165,7 +165,7 @@ dynMap *dmCreate(dmKeyType keyType, dynInt estimatedSize)
     return dm;
 }
 
-void dmDestroy(dynMap *dm, dynDestroyFunc destroyFunc)
+void dmDestroy(dynMap *dm, void * /*dynDestroyFunc*/ destroyFunc)
 {
     if(dm)
     {
@@ -181,8 +181,9 @@ static void dmDestroyEntry(dynMap *dm, dynMapEntry *p)
     free(p);
 }
 
-void dmClear(dynMap *dm, dynDestroyFunc destroyFunc)
+void dmClear(dynMap *dm, void * /*dynDestroyFunc*/ destroyFunc)
 {
+    dynDestroyFunc func = destroyFunc;
     if(dm)
     {
         dynInt tableIndex;
@@ -192,8 +193,8 @@ void dmClear(dynMap *dm, dynDestroyFunc destroyFunc)
             while(entry)
             {
                 dynMapEntry *freeme = entry;
-                if(destroyFunc && entry->valuePtr)
-                    destroyFunc(entry->valuePtr);
+                if(func && entry->valuePtr)
+                    func(entry->valuePtr);
                 entry = entry->next;
                 dmDestroyEntry(dm, freeme);
             }
@@ -250,8 +251,9 @@ int dmHasString(dynMap *dm, const char *key)
     return (dmFindString(dm, key, 0) != NULL);
 }
 
-void dmEraseString(dynMap *dm, const char *key, dynDestroyFunc destroyFunc)
+void dmEraseString(dynMap *dm, const char *key, void * /*dynDestroyFunc*/ destroyFunc)
 {
+    dynDestroyFunc func = destroyFunc;
     dynMapHash hash = (dynMapHash)HASHSTRING(key);
     dynInt index = linearHashCompute(dm, hash);
     dynMapEntry *prev = NULL;
@@ -268,8 +270,8 @@ void dmEraseString(dynMap *dm, const char *key, dynDestroyFunc destroyFunc)
             {
                 dm->table[index] = entry->next;
             }
-            if(destroyFunc && entry->valuePtr)
-                destroyFunc(entry->valuePtr);
+            if(func && entry->valuePtr)
+                func(entry->valuePtr);
             dmDestroyEntry(dm, entry);
             --dm->count;
             dmRewindSplit(dm);
@@ -288,8 +290,9 @@ int dmHasInteger(dynMap *dm, dynInt key)
     return (dmFindInteger(dm, key, 0) != NULL);
 }
 
-void dmEraseInteger(dynMap *dm, dynInt key, dynDestroyFunc destroyFunc)
+void dmEraseInteger(dynMap *dm, dynInt key, void * /*dynDestroyFunc*/ destroyFunc)
 {
+    dynDestroyFunc func = destroyFunc;
     dynMapHash hash = (dynMapHash)HASHINT(key);
     dynInt index = linearHashCompute(dm, hash);
     dynMapEntry *prev = NULL;
@@ -306,8 +309,8 @@ void dmEraseInteger(dynMap *dm, dynInt key, dynDestroyFunc destroyFunc)
             {
                 dm->table[index] = entry->next;
             }
-            if(destroyFunc && entry->valuePtr)
-                destroyFunc(entry->valuePtr);
+            if(func && entry->valuePtr)
+                func(entry->valuePtr);
             dmDestroyEntry(dm, entry);
             --dm->count;
             dmRewindSplit(dm);

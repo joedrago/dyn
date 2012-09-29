@@ -12,13 +12,13 @@
 
 // creation / destruction / cleanup
 void daCreate(void *daptr);
-void daDestroy(void *daptr, dynDestroyFunc destroyFunc);
+void daDestroy(void *daptr, void * /*dynDestroyFunc*/ destroyFunc);
+void daDestroyP1(void *daptr, void * /*dynDestroyFuncP1*/ destroyFunc, void *p1);
+void daDestroyP2(void *daptr, void * /*dynDestroyFuncP2*/ destroyFunc, void *p1, void *p2);
 void daDestroyStrings(void *daptr);
-void daDestroyP1(void *daptr, dynDestroyFuncP1 destroyFunc, void *p1);
-void daDestroyP2(void *daptr, dynDestroyFuncP2 destroyFunc, void *p1, void *p2);
-void daClear(void *daptr, dynDestroyFunc destroyFunc);
-void daClearP1(void *daptr, dynDestroyFuncP1 destroyFunc, void *p1);
-void daClearP2(void *daptr, dynDestroyFuncP2 destroyFunc, void *p1, void *p2);
+void daClear(void *daptr, void * /*dynDestroyFunc*/ destroyFunc);
+void daClearP1(void *daptr, void * /*dynDestroyFuncP1*/ destroyFunc, void *p1);
+void daClearP2(void *daptr, void * /*dynDestroyFuncP2*/ destroyFunc, void *p1, void *p2);
 void daClearStrings(void *daptr);
 
 // front/back manipulation
@@ -32,13 +32,13 @@ void daInsert(void *daptr, dynSize index, void *p);
 void daErase(void *daptr, dynSize index);
 
 // Size manipulation
-void daSetSize(void *daptr, dynSize newSize, dynDestroyFunc destroyFunc);
-void daSetSizeP1(void *daptr, dynSize newSize, dynDestroyFuncP1 destroyFunc, void *p1);
-void daSetSizeP2(void *daptr, dynSize newSize, dynDestroyFuncP2 destroyFunc, void *p1, void *p2);
+void daSetSize(void *daptr, dynSize newSize, void * /*dynDestroyFunc*/ destroyFunc);
+void daSetSizeP1(void *daptr, dynSize newSize, void * /*dynDestroyFuncP1*/ destroyFunc, void *p1);
+void daSetSizeP2(void *daptr, dynSize newSize, void * /*dynDestroyFuncP2*/ destroyFunc, void *p1, void *p2);
 dynSize daSize(void *daptr);
-void daSetCapacity(void *daptr, dynSize newCapacity, dynDestroyFunc destroyFunc);
-void daSetCapacityP1(void *daptr, dynSize newCapacity, dynDestroyFuncP1 destroyFunc, void *p1);
-void daSetCapacityP2(void *daptr, dynSize newCapacity, dynDestroyFuncP2 destroyFunc, void *p1, void *p2);
+void daSetCapacity(void *daptr, dynSize newCapacity, void * /*dynDestroyFunc*/ destroyFunc);
+void daSetCapacityP1(void *daptr, dynSize newCapacity, void * /*dynDestroyFuncP1*/ destroyFunc, void *p1);
+void daSetCapacityP2(void *daptr, dynSize newCapacity, void * /*dynDestroyFuncP2*/ destroyFunc, void *p1, void *p2);
 dynSize daCapacity(void *daptr);
 void daSquash(void *daptr);
 

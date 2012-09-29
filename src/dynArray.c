@@ -116,41 +116,44 @@ static dynArray *daMakeRoom(char ***daptr, int incomingCount)
 }
 
 // clears [start, (end-1)]
-static void daClearRange(dynArray *da, int start, int end, dynDestroyFunc destroyFunc)
+static void daClearRange(dynArray *da, int start, int end, void * destroyFunc)
 {
-    if(destroyFunc)
+    dynDestroyFunc func = destroyFunc;
+    if(func)
     {
         int i;
         for(i = start; i < end; ++i)
         {
             if(da->values[i])
-                destroyFunc(da->values[i]);
+                func(da->values[i]);
         }
     }
 }
 
-static void daClearRangeP1(dynArray *da, int start, int end, dynDestroyFuncP1 destroyFunc, void *p1)
+static void daClearRangeP1(dynArray *da, int start, int end, void * destroyFunc, void *p1)
 {
-    if(destroyFunc)
+    dynDestroyFuncP1 func = destroyFunc;
+    if(func)
     {
         int i;
         for(i = start; i < end; ++i)
         {
             if(da->values[i])
-                destroyFunc(p1, da->values[i]);
+                func(p1, da->values[i]);
         }
     }
 }
 
-static void daClearRangeP2(dynArray *da, int start, int end, dynDestroyFuncP2 destroyFunc, void *p1, void *p2)
+static void daClearRangeP2(dynArray *da, int start, int end, void * destroyFunc, void *p1, void *p2)
 {
-    if(destroyFunc)
+    dynDestroyFuncP2 func = destroyFunc;
+    if(func)
     {
         int i;
         for(i = start; i < end; ++i)
         {
             if(da->values[i])
-                destroyFunc(p1, p2, da->values[i]);
+                func(p1, p2, da->values[i]);
         }
     }
 }
@@ -163,7 +166,7 @@ void daCreate(void *daptr)
     daGet(daptr, 1);
 }
 
-void daDestroy(void *daptr, dynDestroyFunc destroyFunc)
+void daDestroy(void *daptr, void * destroyFunc)
 {
     dynArray *da = daGet((char ***)daptr, 0);
     if(da)
@@ -179,7 +182,7 @@ void daDestroyStrings(void *daptr)
     daDestroy(daptr, dsDestroyIndirect);
 }
 
-void daDestroyP1(void *daptr, dynDestroyFuncP1 destroyFunc, void *p1)
+void daDestroyP1(void *daptr, void * destroyFunc, void *p1)
 {
     dynArray *da = daGet((char ***)daptr, 0);
     if(da)
@@ -190,7 +193,7 @@ void daDestroyP1(void *daptr, dynDestroyFuncP1 destroyFunc, void *p1)
     }
 }
 
-void daDestroyP2(void *daptr, dynDestroyFuncP2 destroyFunc, void *p1, void *p2)
+void daDestroyP2(void *daptr, void * destroyFunc, void *p1, void *p2)
 {
     dynArray *da = daGet((char ***)daptr, 0);
     if(da)
@@ -201,7 +204,7 @@ void daDestroyP2(void *daptr, dynDestroyFuncP2 destroyFunc, void *p1, void *p2)
     }
 }
 
-void daClear(void *daptr, dynDestroyFunc destroyFunc)
+void daClear(void *daptr, void * destroyFunc)
 {
     dynArray *da = daGet((char ***)daptr, 0);
     if(da)
@@ -211,7 +214,7 @@ void daClear(void *daptr, dynDestroyFunc destroyFunc)
     }
 }
 
-void daClearP1(void *daptr, dynDestroyFuncP1 destroyFunc, void *p1)
+void daClearP1(void *daptr, void * destroyFunc, void *p1)
 {
     dynArray *da = daGet((char ***)daptr, 0);
     if(da)
@@ -221,7 +224,7 @@ void daClearP1(void *daptr, dynDestroyFuncP1 destroyFunc, void *p1)
     }
 }
 
-void daClearP2(void *daptr, dynDestroyFuncP2 destroyFunc, void *p1, void *p2)
+void daClearP2(void *daptr, void * destroyFunc, void *p1, void *p2)
 {
     dynArray *da = daGet((char ***)daptr, 0);
     if(da)
@@ -314,21 +317,21 @@ void daErase(void *daptr, dynSize index)
 // ------------------------------------------------------------------------------------------------
 // Size manipulation
 
-void daSetSize(void *daptr, dynSize newSize, dynDestroyFunc destroyFunc)
+void daSetSize(void *daptr, dynSize newSize, void * destroyFunc)
 {
     dynArray *da = daGet((char ***)daptr, 1);
     daClearRange(da, newSize, da->size, destroyFunc);
     daChangeSize(daptr, newSize);
 }
 
-void daSetSizeP1(void *daptr, dynSize newSize, dynDestroyFuncP1 destroyFunc, void *p1)
+void daSetSizeP1(void *daptr, dynSize newSize, void * destroyFunc, void *p1)
 {
     dynArray *da = daGet((char ***)daptr, 1);
     daClearRangeP1(da, newSize, da->size, destroyFunc, p1);
     daChangeSize(daptr, newSize);
 }
 
-void daSetSizeP2(void *daptr, dynSize newSize, dynDestroyFuncP2 destroyFunc, void *p1, void *p2)
+void daSetSizeP2(void *daptr, dynSize newSize, void * destroyFunc, void *p1, void *p2)
 {
     dynArray *da = daGet((char ***)daptr, 1);
     daClearRangeP2(da, newSize, da->size, destroyFunc, p1, p2);
@@ -343,21 +346,21 @@ dynSize daSize(void *daptr)
     return 0;
 }
 
-void daSetCapacity(void *daptr, dynSize newCapacity, dynDestroyFunc destroyFunc)
+void daSetCapacity(void *daptr, dynSize newCapacity, void * destroyFunc)
 {
     dynArray *da = daGet((char ***)daptr, 1);
     daClearRange(da, newCapacity, da->size, destroyFunc);
     daChangeCapacity(newCapacity, daptr);
 }
 
-void daSetCapacityP1(void *daptr, dynSize newCapacity, dynDestroyFuncP1 destroyFunc, void *p1)
+void daSetCapacityP1(void *daptr, dynSize newCapacity, void * destroyFunc, void *p1)
 {
     dynArray *da = daGet((char ***)daptr, 1);
     daClearRangeP1(da, newCapacity, da->size, destroyFunc, p1);
     daChangeCapacity(newCapacity, daptr);
 }
 
-void daSetCapacityP2(void *daptr, dynSize newCapacity, dynDestroyFuncP2 destroyFunc, void *p1, void *p2)
+void daSetCapacityP2(void *daptr, dynSize newCapacity, void * destroyFunc, void *p1, void *p2)
 {
     dynArray *da = daGet((char ***)daptr, 1);
     daClearRangeP2(da, newCapacity, da->size, destroyFunc, p1, p2);
