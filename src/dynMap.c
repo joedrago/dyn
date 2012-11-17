@@ -170,6 +170,7 @@ void dmDestroy(dynMap *dm, void * /*dynDestroyFunc*/ destroyFunc)
     if(dm)
     {
         dmClear(dm, destroyFunc);
+        daDestroy(&dm->table, NULL);
         free(dm);
     }
 }
@@ -177,7 +178,9 @@ void dmDestroy(dynMap *dm, void * /*dynDestroyFunc*/ destroyFunc)
 static void dmDestroyEntry(dynMap *dm, dynMapEntry *p)
 {
     if(dm->keyType == KEYTYPE_STRING)
+    {
         free(p->keyStr);
+    }
     free(p);
 }
 
