@@ -10,6 +10,21 @@ typedef enum dynRegexTokenType
     DRTT_COUNT
 } dynRegexTokenType;
 
+typedef enum dynRegexParseFlags
+{
+    DRPF_OR = (1 << 0),
+
+    DRPF_COUNT
+} dynRegexParseFlags;
+
+typedef enum dynRegexParseResult
+{
+    DRPR_OK = 0,
+    DRPR_EARLY_EOF,
+
+    DRPR_COUNT
+} dynRegexParseResult;
+
 struct dynRegexNode;
 struct dynRegexLink;
 struct dynRegex;
@@ -111,10 +126,10 @@ static regexToken regexLex(regexParser *parser)
 }
 
 // Returns the "end" node
-static dynRegexNode *dynRegexParse(dynRegex *dr, regexParser *parser, dynRegexNode *parentNode, dynRegexTokenType endType)
+static dynRegexParseResult dynRegexParse(dynRegex *dr, regexParser *parser, dynRegexNode *startNode, dynRegexNode *endNode, dynRegexTokenType endType, int flags)
 {
-    dynRegexNode *endNode = parentNode;
     int done = 0;
+    dynRegexNode *appendNode = startNode;
     while(!done)
     {
         regexToken token = regexLex(parser);
@@ -123,7 +138,7 @@ static dynRegexNode *dynRegexParse(dynRegex *dr, regexParser *parser, dynRegexNo
             if(token.type != endType)
             {
                 // a premature end to the regex, bail out
-                return NULL;
+                return DRPR_EARLY_EOF;
             }
             break;
         }
@@ -132,17 +147,13 @@ static dynRegexNode *dynRegexParse(dynRegex *dr, regexParser *parser, dynRegexNo
         {
             case DRTT_OR:
                 {
-                    dynRegexNode *e = dynRegexParse(dr, parser, parentNode, endType);
+                    dynRegexParseResult result = dynRegexParse(dr, parser, startNode, endNode, endType, flags);
                     dynRegexNode *final;
-                    if(!e)
+                    if(result != DRPR_OK)
                     {
-                        return NULL;
+                        return result;
                     }
 
-                    final = dynRegexNodeCreate(dr);
-                    dynRegexLinkCreate(dr, DRLT_BLANK, e, final, 0);
-                    dynRegexLinkCreate(dr, DRLT_BLANK, endNode, final, 0);
-                    endNode = final;
                     done = 1;
                 }
                 break;
@@ -150,14 +161,15 @@ static dynRegexNode *dynRegexParse(dynRegex *dr, regexParser *parser, dynRegexNo
                 {
                     dynRegexNode *s = dynRegexNodeCreate(dr);
                     dynRegexNode *e = dynRegexNodeCreate(dr);
-                    dynRegexLinkCreate(dr, DRLT_BLANK, endNode, s, 0);
+                    dynRegexLinkCreate(dr, DRLT_BLANK, appendNode, s, 0);
                     dynRegexLinkCreate(dr, DRLT_CHARACTER, s, e, token.c);
-                    endNode = e;
+                    appendNode = e;
                 }
                 break;
         };
     }
-    return endNode;
+    dynRegexLinkCreate(dr, DRLT_BLANK, appendNode, endNode, 0);
+    return DRPR_OK;
 }
 
 void dynRegexDestroy(dynRegex *dr)
@@ -174,12 +186,13 @@ dynRegex *dynRegexCreate(const char *input)
     parser.input = input;
     parser.curr = parser.input;
     dynRegexNode *start = dynRegexNodeCreate(dr);
-    dynRegexNode *end = dynRegexParse(dr, &parser, start, DRTT_EOF);
-    if(end)
+    dynRegexNode *end = dynRegexNodeCreate(dr);
+    dynRegexParseResult result = dynRegexParse(dr, &parser, start, end, DRTT_EOF, 0);
+    if(result == DRPR_OK)
     {
-        dynRegexNode *final = dynRegexNodeCreate(dr);
+        dynRegexNode *final = end;//dynRegexNodeCreate(dr);
         final->final = 1;
-        dynRegexLinkCreate(dr, DRLT_BLANK, end, final, 0);
+        //dynRegexLinkCreate(dr, DRLT_BLANK, end, final, 0);
         dr->start = start;
         dr->end = final;
     }
@@ -194,22 +207,27 @@ dynRegex *dynRegexCreate(const char *input)
 void dynRegexDot(dynRegex *dr)
 {
     int i;
-    char nodeLabel = 'A';
+    char nodeLabel[2] = {'A', 'A'};
 
     printf("digraph PennyMachine {\n");
-//    printf("    rankdir=LR;\n");
-    printf("    splines=true;\n");
     printf("    overlap=false;\n");
+    printf("    splines=true;\n");
+    printf("    rankdir=LR;\n");
     for(i = 0; i < daSize(&dr->nodes); ++i)
     {
         dynRegexNode *n = dr->nodes[i];
-        printf("    s%p [label=\"%c%s%s\",shape=circle,width=2,height=2%s];\n", 
-            n, nodeLabel,
+        printf("    s%p [label=\"%c%c%s%s\",shape=circle,width=2,height=2%s];\n", 
+            n, nodeLabel[0], nodeLabel[1],
             (n == dr->start) ? " (start)" : "",
             (n == dr->end) ? " (end)" : "",
             n->final ? ",style=filled,color=gray" : ""
             );
-        ++nodeLabel;
+        ++nodeLabel[1];
+        if(nodeLabel[1] > 'Z')
+        {
+            nodeLabel[1] = 'A';
+            ++nodeLabel[0];
+        }
     }
     for(i = 0; i < daSize(&dr->links); ++i)
     {
