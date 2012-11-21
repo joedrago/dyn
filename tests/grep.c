@@ -1,3 +1,6 @@
+#include "dynArray.h"
+#include "dynString.h"
+
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -42,18 +45,34 @@ typedef enum dynRegexLinkType
 {
     DRLT_BLANK = 0,
     DRLT_CHAR,
-    DRLT_NOT_CHAR,
-    DRLT_CC,
-    DRLT_NOT_CC,
 
     DRLT_COUNT
 } dynRegexLinkType;
 
+typedef struct dynRegexCharRange
+{
+    int c1;
+    int c2;
+} dynRegexCharRange;
+
+dynRegexCharRange * dynRegexCharRangeCreate(int c1, int c2)
+{
+    dynRegexCharRange *range = (dynRegexCharRange *)calloc(1, sizeof(dynRegexCharRange));
+    range->c1 = c1;
+    range->c2 = c2;
+    return range;
+}
+
+void dynRegexCharRangeDestroy(dynRegexCharRange *range)
+{
+    free(range);
+}
+
 typedef struct dynRegexLink
 {
     int type;
-    int c1;
-    int c2;
+    int not;
+    dynRegexCharRange **ranges;
     struct dynRegexNode *src;
     struct dynRegexNode *dst;
 } dynRegexLink;
@@ -91,14 +110,12 @@ static void dynRegexNodeDestroy(struct dynRegexNode *n)
     free(n);
 }
 
-static dynRegexLink *dynRegexLinkCreate(struct dynRegex *r, dynRegexLinkType type, dynRegexNode *src, dynRegexNode *dst, int c1, int c2)
+static dynRegexLink *dynRegexLinkCreate(struct dynRegex *r, dynRegexLinkType type, dynRegexNode *src, dynRegexNode *dst)
 {
     dynRegexLink *l = (dynRegexLink *)calloc(1, sizeof(dynRegexLink));
     l->type = type;
     l->src = src;
     l->dst = dst;
-    l->c1 = c1;
-    l->c2 = c2;
     daPush(&r->links, l);
     daPush(&src->links, l);
     return l;
@@ -106,7 +123,13 @@ static dynRegexLink *dynRegexLinkCreate(struct dynRegex *r, dynRegexLinkType typ
 
 static void dynRegexLinkDestroy(dynRegexLink *l)
 {
+    daDestroy(&l->ranges, dynRegexCharRangeDestroy);
     free(l);
+}
+
+static void dynRegexLinkAddRange(dynRegexLink *l, int c1, int c2)
+{
+    daPush(&l->ranges, dynRegexCharRangeCreate(c1, c2));
 }
 
 static regexToken regexLex(regexParser *parser)
@@ -153,26 +176,20 @@ static regexToken regexLex(regexParser *parser)
     return token;
 }
 
+#if 0
 static dynRegexNode * appendCharacterLink(dynRegex *dr, dynRegexNode *startNode, dynRegexNode *endNode, int charRangeBegin, int charRangeEnd, int not)
 {
     dynRegexNode *s = dynRegexNodeCreate(dr);
-    int type;
-    if(charRangeEnd)
-    {
-        type = not ? DRLT_NOT_CC : DRLT_CC;
-    }
-    else
-    {
-        type = not ? DRLT_NOT_CHAR : DRLT_CHAR;
-    }
-    dynRegexLinkCreate(dr, DRLT_BLANK, startNode, s, 0, 0);
-    dynRegexLinkCreate(dr, type, s, endNode, charRangeBegin, charRangeEnd);
+    dynRegexLinkCreate(dr, DRLT_BLANK, startNode, s);
+    dynRegexLinkAddRange(dynRegexLinkCreate(dr, DRLT_CHAR, s, endNode), charRangeBegin, charRangeEnd);
+    
     if(not)
     {
         return s;
     }
     return startNode;
 }
+#endif
 
 // Returns the "end" node
 static dynRegexParseResult dynRegexParse(dynRegex *dr, regexParser *parser, dynRegexNode *startNode, dynRegexNode *endNode, dynRegexTokenType endType, int flags)
@@ -213,7 +230,14 @@ static dynRegexParseResult dynRegexParse(dynRegex *dr, regexParser *parser, dynR
                     int range = 0;
                     int not = 0;
                     int first = 1;
+
+                    dynRegexLink *cc;
+                    dynRegexNode *s = dynRegexNodeCreate(dr);
                     dynRegexNode *e = dynRegexNodeCreate(dr);
+                    dynRegexLinkCreate(dr, DRLT_BLANK, appendNode, s);
+                    cc = dynRegexLinkCreate(dr, DRLT_CHAR, s, e);
+                    appendNode = e;
+
                     while(token.type != DRTT_CC_END)
                     {
                         token = regexLex(parser);
@@ -226,7 +250,7 @@ static dynRegexParseResult dynRegexParse(dynRegex *dr, regexParser *parser, dynR
                             if(c)
                             {
                                 // clean up leftover character class stuff here
-                                appendNode = appendCharacterLink(dr, appendNode, e, c, 0, not);
+                                dynRegexLinkAddRange(cc, c, 0);
                             }
                             break;
                         }
@@ -236,7 +260,18 @@ static dynRegexParseResult dynRegexParse(dynRegex *dr, regexParser *parser, dynR
                         }
 
                         // handle DRTT_CHAR
-                        if(token.c == '-')
+                        if(token.c == '^')
+                        {
+                            if(first)
+                            {
+                                cc->not = 1;
+                            }
+                            else
+                            {
+                                dynRegexLinkAddRange(cc, token.c, 0);
+                            }
+                        }
+                        else if(token.c == '-')
                         {
                             if(c)
                             {
@@ -244,14 +279,14 @@ static dynRegexParseResult dynRegexParse(dynRegex *dr, regexParser *parser, dynR
                             }
                             else
                             {
-                                appendNode = appendCharacterLink(dr, appendNode, e, token.c, 0, not);
+                                dynRegexLinkAddRange(cc, token.c, 0);
                             }
                         }
                         else
                         {
                             if(range)
                             {
-                                appendNode = appendCharacterLink(dr, appendNode, e, c, token.c, not);
+                                dynRegexLinkAddRange(cc, c, token.c);
                                 range = 0;
                                 c = 0;
                             }
@@ -259,13 +294,13 @@ static dynRegexParseResult dynRegexParse(dynRegex *dr, regexParser *parser, dynR
                             {
                                 if(c)
                                 {
-                                    appendNode = appendCharacterLink(dr, appendNode, e, c, 0, not);
+                                    dynRegexLinkAddRange(cc, c, 0);
                                 }
                                 c = token.c;
                             }
                         }
+                        first = 0;
                     }
-                    appendNode = e;
                 }
                 break;
 
@@ -273,14 +308,14 @@ static dynRegexParseResult dynRegexParse(dynRegex *dr, regexParser *parser, dynR
                 {
                     dynRegexNode *s = dynRegexNodeCreate(dr);
                     dynRegexNode *e = dynRegexNodeCreate(dr);
-                    dynRegexLinkCreate(dr, DRLT_BLANK, appendNode, s, 0, 0);
-                    dynRegexLinkCreate(dr, DRLT_CHAR, s, e, token.c, 0);
+                    dynRegexLinkCreate(dr, DRLT_BLANK, appendNode, s);
+                    dynRegexLinkAddRange(dynRegexLinkCreate(dr, DRLT_CHAR, s, e), token.c, 0);
                     appendNode = e;
                 }
                 break;
         };
     }
-    dynRegexLinkCreate(dr, DRLT_BLANK, appendNode, endNode, 0, 0);
+    dynRegexLinkCreate(dr, DRLT_BLANK, appendNode, endNode);
     return DRPR_OK;
 }
 
@@ -315,6 +350,11 @@ dynRegex *dynRegexCreate(const char *input)
     return dr;
 }
 
+static void dsAppendChar(char **ds, int c)
+{
+    dsConcatf(ds, "%c", (char)c);
+}
+
 void dynRegexDot(dynRegex *dr)
 {
     int i;
@@ -343,25 +383,35 @@ void dynRegexDot(dynRegex *dr)
     for(i = 0; i < daSize(&dr->links); ++i)
     {
         dynRegexLink *link = dr->links[i];
-        char label[128];
-        label[0] = 0;
+        char *label = NULL;
+        char *options = NULL;
+        dsConcatf(&label, "");
+        dsConcatf(&options, "");
         if(link->type == DRLT_CHAR)
         {
-            sprintf(label, "[label=\"%c\",color=blue]", link->c1);
+            int r;
+            for(r = 0; r < daSize(&link->ranges); ++r)
+            {
+                dynRegexCharRange *range = link->ranges[r];
+                dsAppendChar(&label, range->c1);
+                if(range->c2)
+                {
+                    dsConcatf(&label, "-");
+                    dsAppendChar(&label, range->c2);
+                }
+            }
+            if(link->not)
+            {
+                dsConcatf(&options, ",color=red");
+            }
+            else
+            {
+                dsConcatf(&options, ",color=blue");
+            }
         }
-        else if(link->type == DRLT_NOT_CHAR)
-        {
-            sprintf(label, "[label=\"%c\",color=red]", link->c1);
-        }
-        else if(link->type == DRLT_CC)
-        {
-            sprintf(label, "[label=\"%c-%c\",color=blue]", link->c1, link->c2);
-        }
-        else if(link->type == DRLT_NOT_CC)
-        {
-            sprintf(label, "[label=\"%c-%c\",color=red]", link->c1, link->c2);
-        }
-        printf("    s%p -> s%p %s;\n", link->src, link->dst, label);
+        printf("    s%p -> s%p [label=\"%s\"%s];\n", link->src, link->dst, label, options);
+        dsDestroy(&label);
+        dsDestroy(&options);
     }
     printf("}\n");
 }
