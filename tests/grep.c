@@ -9,6 +9,10 @@ typedef enum dynRegexTokenType
     DRTT_EOF = 0,
     DRTT_CHAR,
     DRTT_OR,
+    DRTT_ZERO_OR_MORE,
+    DRTT_ONE_OR_MORE,
+    DRTT_CAPTURE_BEGIN,
+    DRTT_CAPTURE_END,
     DRTT_CC_BEGIN,
     DRTT_CC_END,
 
@@ -27,6 +31,7 @@ typedef enum dynRegexParseResult
     DRPR_OK = 0,
     DRPR_EARLY_EOF,
     DRPR_INVALID_CC,
+    DRPR_INVALID_MORE,
 
     DRPR_COUNT
 } dynRegexParseResult;
@@ -39,6 +44,7 @@ typedef struct dynRegexNode
 {
     struct dynRegexLink **links;
     int final;
+    int generation; // just for debugging
 } dynRegexNode;
 
 typedef enum dynRegexLinkType
@@ -97,9 +103,10 @@ typedef struct regexParser
     const char *curr;
 } regexParser;
 
-static dynRegexNode *dynRegexNodeCreate(struct dynRegex *r)
+static dynRegexNode *dynRegexNodeCreate(struct dynRegex *r, int generation)
 {
     dynRegexNode *n = (dynRegexNode *)calloc(1, sizeof(dynRegexNode));
+    n->generation = generation;
     daPush(&r->nodes, n);
     return n;
 }
@@ -142,6 +149,34 @@ static regexToken regexLex(regexParser *parser)
             case '|':
                 {
                     token.type = DRTT_OR;
+                    ++parser->curr;
+                }
+                break;
+
+            case '*':
+                {
+                    token.type = DRTT_ZERO_OR_MORE;
+                    ++parser->curr;
+                }
+                break;
+
+            case '+':
+                {
+                    token.type = DRTT_ONE_OR_MORE;
+                    ++parser->curr;
+                }
+                break;
+
+            case '(':
+                {
+                    token.type = DRTT_CAPTURE_BEGIN;
+                    ++parser->curr;
+                }
+                break;
+
+            case ')':
+                {
+                    token.type = DRTT_CAPTURE_END;
                     ++parser->curr;
                 }
                 break;
@@ -192,12 +227,17 @@ static dynRegexNode * appendCharacterLink(dynRegex *dr, dynRegexNode *startNode,
 #endif
 
 // Returns the "end" node
-static dynRegexParseResult dynRegexParse(dynRegex *dr, regexParser *parser, dynRegexNode *startNode, dynRegexNode *endNode, dynRegexTokenType endType, int flags)
+static dynRegexParseResult dynRegexParse(dynRegex *dr, regexParser *parser, dynRegexNode *startNode, dynRegexNode *endNode, dynRegexTokenType endType, int flags, int generation)
 {
     int done = 0;
     dynRegexNode *appendNode = startNode;
+    dynRegexNode *lastStart = NULL;
+    dynRegexNode *lastEnd = NULL;
+    ++generation;
     while(!done)
     {
+        dynRegexNode *s = NULL;
+        dynRegexNode *e = NULL;
         regexToken token = regexLex(parser);
         if((token.type == DRTT_EOF) || (token.type == endType))
         {
@@ -213,14 +253,29 @@ static dynRegexParseResult dynRegexParse(dynRegex *dr, regexParser *parser, dynR
         {
             case DRTT_OR:
                 {
-                    dynRegexParseResult result = dynRegexParse(dr, parser, startNode, endNode, endType, flags);
-                    dynRegexNode *final;
+                    dynRegexParseResult result = dynRegexParse(dr, parser, startNode, endNode, endType, flags, generation);
                     if(result != DRPR_OK)
                     {
                         return result;
                     }
 
                     done = 1;
+                }
+                break;
+
+            case DRTT_ZERO_OR_MORE:
+            case DRTT_ONE_OR_MORE:
+                {
+                    if(!lastStart || !lastEnd)
+                    {
+                        return DRPR_INVALID_MORE;
+                    }
+
+                    if(token.type == DRTT_ZERO_OR_MORE)
+                    {
+                        dynRegexLinkCreate(dr, DRLT_BLANK, lastStart, lastEnd);
+                    }
+                    dynRegexLinkCreate(dr, DRLT_BLANK, lastEnd, lastStart);
                 }
                 break;
 
@@ -232,8 +287,8 @@ static dynRegexParseResult dynRegexParse(dynRegex *dr, regexParser *parser, dynR
                     int first = 1;
 
                     dynRegexLink *cc;
-                    dynRegexNode *s = dynRegexNodeCreate(dr);
-                    dynRegexNode *e = dynRegexNodeCreate(dr);
+                    s = dynRegexNodeCreate(dr, generation);
+                    e = dynRegexNodeCreate(dr, generation);
                     dynRegexLinkCreate(dr, DRLT_BLANK, appendNode, s);
                     cc = dynRegexLinkCreate(dr, DRLT_CHAR, s, e);
                     appendNode = e;
@@ -304,16 +359,33 @@ static dynRegexParseResult dynRegexParse(dynRegex *dr, regexParser *parser, dynR
                 }
                 break;
 
+            case DRTT_CAPTURE_BEGIN:
+                {
+                    s = dynRegexNodeCreate(dr, generation);
+                    e = dynRegexNodeCreate(dr, generation);
+                    dynRegexParseResult result = dynRegexParse(dr, parser, s, e, DRTT_CAPTURE_END, flags, 0);
+                    if(result != DRPR_OK)
+                    {
+                        return result;
+                    }
+                    dynRegexLinkCreate(dr, DRLT_BLANK, appendNode, s);
+                    appendNode = e;
+                }
+                break;
+
             case DRTT_CHAR:
                 {
-                    dynRegexNode *s = dynRegexNodeCreate(dr);
-                    dynRegexNode *e = dynRegexNodeCreate(dr);
+                    s = dynRegexNodeCreate(dr, generation);
+                    e = dynRegexNodeCreate(dr, generation);
                     dynRegexLinkCreate(dr, DRLT_BLANK, appendNode, s);
                     dynRegexLinkAddRange(dynRegexLinkCreate(dr, DRLT_CHAR, s, e), token.c, 0);
                     appendNode = e;
                 }
                 break;
         };
+
+        lastStart = s;
+        lastEnd = e;
     }
     dynRegexLinkCreate(dr, DRLT_BLANK, appendNode, endNode);
     return DRPR_OK;
@@ -332,9 +404,9 @@ dynRegex *dynRegexCreate(const char *input)
     dynRegex *dr = (dynRegex *)calloc(1, sizeof(dynRegex));
     parser.input = input;
     parser.curr = parser.input;
-    dynRegexNode *start = dynRegexNodeCreate(dr);
-    dynRegexNode *end = dynRegexNodeCreate(dr);
-    dynRegexParseResult result = dynRegexParse(dr, &parser, start, end, DRTT_EOF, 0);
+    dynRegexNode *start = dynRegexNodeCreate(dr, 0);
+    dynRegexNode *end = dynRegexNodeCreate(dr, 0);
+    dynRegexParseResult result = dynRegexParse(dr, &parser, start, end, DRTT_EOF, 0, 1);
     if(result == DRPR_OK)
     {
         dynRegexNode *final = end;//dynRegexNodeCreate(dr);
@@ -355,6 +427,18 @@ static void dsAppendChar(char **ds, int c)
     dsConcatf(ds, "%c", (char)c);
 }
 
+const char *generation(int g)
+{
+    switch(g)
+    {
+        case 0: return ",color=\"#ff0000\"";
+        case 1: return ",color=\"#00ff00\"";
+        case 2: return ",color=\"#0000ff\"";
+        case 3: return ",color=\"#ffff00\"";
+    };
+    return "";
+}
+
 void dynRegexDot(dynRegex *dr)
 {
     int i;
@@ -371,7 +455,7 @@ void dynRegexDot(dynRegex *dr)
             n, nodeLabel[0], nodeLabel[1],
             (n == dr->start) ? " (start)" : "",
             (n == dr->end) ? " (end)" : "",
-            n->final ? ",style=filled,color=gray" : ""
+            n->final ? ",style=filled,color=gray" : generation(n->generation)
             );
         ++nodeLabel[1];
         if(nodeLabel[1] > 'Z')
