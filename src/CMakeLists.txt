@@ -1,4 +1,4 @@
-add_library(dynamic
+add_library(dyn
     dynArray.c
     dynArray.h
     dynBase.c

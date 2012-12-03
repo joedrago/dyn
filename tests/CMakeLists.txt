@@ -1,6 +1,6 @@
-add_executable(dynamicTest
+add_executable(dynTest
     main.c
 )
-target_link_libraries(dynamicTest
-    dynamic
+target_link_libraries(dynTest
+    dyn
 )
