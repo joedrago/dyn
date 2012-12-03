@@ -12,29 +12,31 @@
 
 #include <stdarg.h>
 
+typedef unsigned int rune;
+
 // creation / destruction / cleanup
-void dsCreate(char **dsptr);
-void dsDestroy(char **dsptr);
-void dsDestroyIndirect(char *ds);
-void dsClear(char **dsptr);
-char *dsDup(const char *text);
-char *dsDupf(const char *format, ...);
+void dsCreate(rune **dsptr);
+void dsDestroy(rune **dsptr);
+void dsDestroyIndirect(rune *ds);
+void dsClear(rune **dsptr);
+rune *dsDup(const rune *text);
+rune *dsDupf(const rune *format, ...);
 
 // manipulation
-void dsCopyLen(char **dsptr, const char *text, dynSize len);
-void dsCopy(char **dsptr, const char *text);
-void dsConcatLen(char **dsptr, const char *text, dynSize len);
-void dsConcat(char **dsptr, const char *text);
-void dsPrintf(char **dsptr, const char *format, ...);
-void dsConcatv(char **dsptr, const char *format, va_list args);
-void dsConcatf(char **dsptr, const char *format, ...);
-void dsSetLength(char **dsptr, dynSize newLength);
-void dsCalcLength(char **dsptr);
-void dsSetCapacity(char **dsptr, dynSize newCapacity);
+void dsCopyLen(rune **dsptr, const rune *text, dynSize len);
+void dsCopy(rune **dsptr, const rune *text);
+void dsConcatLen(rune **dsptr, const rune *text, dynSize len);
+void dsConcat(rune **dsptr, const rune *text);
+void dsPrintf(rune **dsptr, const rune *format, ...);
+void dsConcatv(rune **dsptr, const rune *format, va_list args);
+void dsConcatf(rune **dsptr, const rune *format, ...);
+void dsSetLength(rune **dsptr, dynSize newLength);
+void dsCalcLength(rune **dsptr);
+void dsSetCapacity(rune **dsptr, dynSize newCapacity);
 
 // information / testing
-int dsCmp(char **dsptr, char **other);
-dynSize dsLength(char **dsptr);
-dynSize dsCapacity(char **dsptr);
+int dsCmp(rune **dsptr, rune **other);
+dynSize dsLength(rune **dsptr);
+dynSize dsCapacity(rune **dsptr);
 
 #endif

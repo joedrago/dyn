@@ -23,7 +23,7 @@
 
 typedef struct dynString
 {
-    char *buffer;
+    rune *buffer;
     int length;
     int capacity;
 } dynString;
@@ -32,20 +32,20 @@ typedef struct dynString
 // Internal helper functions
 
 // workhorse function that does all of the allocation and copying
-static dynString *dsChangeCapacity(dynSize newCapacity, char **prevptr)
+static dynString *dsChangeCapacity(dynSize newCapacity, rune **prevptr)
 {
     dynString *newString;
     dynString *prevString = NULL;
     if(prevptr && *prevptr)
     {
-        prevString = (dynString *)((char *)(*prevptr) - sizeof(dynString));
+        prevString = (dynString *)((rune *)(*prevptr) - sizeof(dynString));
         if(newCapacity == prevString->capacity)
             return prevString;
     }
 
-    newString = (dynString *)calloc(1, sizeof(dynString) + (sizeof(char) * (newCapacity + 1)));
+    newString = (dynString *)calloc(1, sizeof(dynString) + (sizeof(rune) * (newCapacity + 1)));
     newString->capacity = newCapacity;
-    newString->buffer = ((char *)newString) + sizeof(dynString);
+    newString->buffer = ((rune *)newString) + sizeof(dynString);
     if(prevptr)
     {
         if(prevString)
@@ -53,7 +53,7 @@ static dynString *dsChangeCapacity(dynSize newCapacity, char **prevptr)
             int copyCount = prevString->length;
             if(copyCount > newString->capacity)
                 copyCount = newString->capacity;
-            memcpy(newString->buffer, prevString->buffer, sizeof(char) * (copyCount + 1)); // + null terminator
+            memcpy(newString->buffer, prevString->buffer, sizeof(rune) * (copyCount + 1)); // + null terminator
             newString->length = copyCount;
             free(prevString);
         }
@@ -63,13 +63,13 @@ static dynString *dsChangeCapacity(dynSize newCapacity, char **prevptr)
 }
 
 // finds / lazily creates a dynString from a regular ptr*
-static dynString *dsGet(char **dsptr, int autoCreate)
+static dynString *dsGet(rune **dsptr, int autoCreate)
 {
     dynString *ds = NULL;
     if(dsptr && *dsptr)
     {
         // Move backwards one struct's worth (in bytes) to find the actual struct
-        ds = (dynString *)((char *)(*dsptr) - sizeof(dynString));
+        ds = (dynString *)((rune *)(*dsptr) - sizeof(dynString));
     }
     else
     {
@@ -83,7 +83,7 @@ static dynString *dsGet(char **dsptr, int autoCreate)
 }
 
 // calls dsChangeCapacity in preparation for new dsta, if necessary
-static dynString *dsMakeRoom(char **dsptr, int len, int append)
+static dynString *dsMakeRoom(rune **dsptr, int len, int append)
 {
     int currCapacity = dsCapacity(dsptr);
     int capacityNeeded = len;
@@ -96,15 +96,45 @@ static dynString *dsMakeRoom(char **dsptr, int len, int append)
     return dsGet(dsptr, 1);
 }
 
+static dynSize runelen(const rune *str)
+{
+    dynSize i = 0;
+    while(*str)
+    {
+        ++i;
+        ++str;
+    }
+    return i;
+}
+
+static int runecmp(const rune *a, const rune *b)
+{
+    unsigned char uc1, uc2;
+    while (*a && (*a == *b))
+    {
+        ++a;
+        ++b;
+    }
+    if(*a < *b)
+    {
+        return -1;
+    }
+    if(*a > *b)
+    {
+        return 1;
+    }
+    return 0;
+}
+
 // ------------------------------------------------------------------------------------------------
 // creation / destruction / cleanup
 
-void dsCreate(char **dsptr)
+void dsCreate(rune **dsptr)
 {
     dsClear(dsptr);
 }
 
-void dsDestroy(char **dsptr)
+void dsDestroy(rune **dsptr)
 {
     dynString *ds = dsGet(dsptr, 0);
     if(ds)
@@ -115,29 +145,29 @@ void dsDestroy(char **dsptr)
     }
 }
 
-void dsDestroyIndirect(char *ds)
+void dsDestroyIndirect(rune *ds)
 {
-    char *p = ds;
+    rune *p = ds;
     dsDestroy(&p);
 }
 
-void dsClear(char **dsptr)
+void dsClear(rune **dsptr)
 {
     dynString *ds = dsGet(dsptr, 1);
     ds->buffer[0] = 0;
     ds->length = 0;
 }
 
-char *dsDup(const char *text)
+rune *dsDup(const rune *text)
 {
-    char *dup = NULL;
+    rune *dup = NULL;
     dsCopy(&dup, text);
     return dup;
 }
 
-char *dsDupf(const char *format, ...)
+rune *dsDupf(const rune *format, ...)
 {
-    char *dup = NULL;
+    rune *dup = NULL;
     va_list args;
     va_start(args, format);
     dsClear(&dup);
@@ -149,33 +179,34 @@ char *dsDupf(const char *format, ...)
 // ------------------------------------------------------------------------------------------------
 // manipulation
 
-void dsCopyLen(char **dsptr, const char *text, dynSize len)
+void dsCopyLen(rune **dsptr, const rune *text, dynSize len)
 {
     dynString *ds = dsMakeRoom(dsptr, len, 0);
-    memcpy(ds->buffer, text, len);
+    memcpy(ds->buffer, text, sizeof(rune) * len);
     ds->length = len;
     ds->buffer[ds->length] = 0;
 }
 
-void dsCopy(char **dsptr, const char *text)
+void dsCopy(rune **dsptr, const rune *text)
 {
-    dsCopyLen(dsptr, text, (dynSize)strlen(text));
+    dsCopyLen(dsptr, text, runelen(text));
 }
 
-void dsConcatLen(char **dsptr, const char *text, dynSize len)
+void dsConcatLen(rune **dsptr, const rune *text, dynSize len)
 {
     dynString *ds = dsMakeRoom(dsptr, len, 1);
-    memcpy(ds->buffer + ds->length, text, len);
+    memcpy(ds->buffer + ds->length, text, sizeof(rune) * len);
     ds->length += len;
     ds->buffer[ds->length] = 0;
 }
 
-void dsConcat(char **dsptr, const char *text)
+void dsConcat(rune **dsptr, const rune *text)
 {
-    dsConcatLen(dsptr, text, (dynSize)strlen(text));
+    dsConcatLen(dsptr, text, runelen(text));
 }
 
-void dsPrintf(char **dsptr, const char *format, ...)
+#if 0
+void dsPrintf(rune **dsptr, const rune *format, ...)
 {
     va_list args;
     va_start(args, format);
@@ -184,7 +215,7 @@ void dsPrintf(char **dsptr, const char *format, ...)
     va_end(args);
 }
 
-void dsConcatv(char **dsptr, const char *format, va_list args)
+void dsConcatv(rune **dsptr, const rune *format, va_list args)
 {
     dynString *ds;
     int textLen;
@@ -205,15 +236,16 @@ void dsConcatv(char **dsptr, const char *format, va_list args)
     ds->length += textLen;
 }
 
-void dsConcatf(char **dsptr, const char *format, ...)
+void dsConcatf(rune **dsptr, const rune *format, ...)
 {
     va_list args;
     va_start(args, format);
     dsConcatv(dsptr, format, args);
     va_end(args);
 }
+#endif
 
-void dsSetLength(char **dsptr, dynSize newLength)
+void dsSetLength(rune **dsptr, dynSize newLength)
 {
     dynString *ds;
 
@@ -230,22 +262,22 @@ void dsSetLength(char **dsptr, dynSize newLength)
     }
     if(newLength > ds->length)
     {
-        memset(ds->buffer + ds->length, ' ', sizeof(char) * (newLength - ds->length));
+        memset(ds->buffer + ds->length, ' ', sizeof(rune) * (newLength - ds->length));
     }
     ds->length = newLength;
     ds->buffer[ds->length] = 0;
 }
 
-void dsCalcLength(char **dsptr)
+void dsCalcLength(rune **dsptr)
 {
     dynString *ds = dsGet(dsptr, 0);
     if(ds)
     {
-        dsSetLength(dsptr, strlen(ds->buffer));
+        dsSetLength(dsptr, runelen(ds->buffer));
     }
 }
 
-void dsSetCapacity(char **dsptr, dynSize newCapacity)
+void dsSetCapacity(rune **dsptr, dynSize newCapacity)
 {
     dynString *ds = dsChangeCapacity(newCapacity, dsptr);
     ds->buffer[ds->length] = 0;
@@ -254,19 +286,20 @@ void dsSetCapacity(char **dsptr, dynSize newCapacity)
 // ------------------------------------------------------------------------------------------------
 // information / testing
 
-int dsCmp(char **dsptr, char **other)
+int dsCmp(rune **dsptr, rune **other)
 {
-    const char *s1 = *dsptr;
-    const char *s2 = *other;
+    const rune *s1 = *dsptr;
+    const rune *s2 = *other;
+    const rune emptyString[] = { 0 };
     if(!s1)
-        s1 = "";
+        s1 = emptyString;
     if(!s2)
-        s2 = "";
+        s2 = emptyString;
 
-    return strcmp(s1, s2);
+    return runecmp(s1, s2);
 }
 
-dynSize dsLength(char **dsptr)
+dynSize dsLength(rune **dsptr)
 {
     dynString *ds = dsGet(dsptr, 0);
     if(ds)
@@ -276,7 +309,7 @@ dynSize dsLength(char **dsptr)
     return 0;
 }
 
-dynSize dsCapacity(char **dsptr)
+dynSize dsCapacity(rune **dsptr)
 {
     dynString *ds = dsGet(dsptr, 0);
     if(ds)
