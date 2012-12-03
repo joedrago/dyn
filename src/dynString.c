@@ -165,6 +165,7 @@ rune *dsDup(const rune *text)
     return dup;
 }
 
+#if 0
 rune *dsDupf(const rune *format, ...)
 {
     rune *dup = NULL;
@@ -175,6 +176,7 @@ rune *dsDupf(const rune *format, ...)
     va_end(args);
     return dup;
 }
+#endif
 
 // ------------------------------------------------------------------------------------------------
 // manipulation
@@ -190,6 +192,17 @@ void dsCopyLen(rune **dsptr, const rune *text, dynSize len)
 void dsCopy(rune **dsptr, const rune *text)
 {
     dsCopyLen(dsptr, text, runelen(text));
+}
+
+void dsCopyUTF8(rune **dsptr, const char *utf8)
+{
+    int i;
+    int len = strlen(utf8); // this is NOT the rune count, but is guaranteed to be bigger
+    dynString *ds = dsMakeRoom(dsptr, len, 0);
+    for(i = 0; i <= len; ++i)
+    {
+        ds->buffer[i] = utf8[i];
+    }
 }
 
 void dsConcatLen(rune **dsptr, const rune *text, dynSize len)

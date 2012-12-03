@@ -20,16 +20,17 @@ void dsDestroy(rune **dsptr);
 void dsDestroyIndirect(rune *ds);
 void dsClear(rune **dsptr);
 rune *dsDup(const rune *text);
-rune *dsDupf(const rune *format, ...);
+//rune *dsDupf(const rune *format, ...);
 
 // manipulation
 void dsCopyLen(rune **dsptr, const rune *text, dynSize len);
 void dsCopy(rune **dsptr, const rune *text);
+void dsCopyUTF8(rune **dsptr, const char *utf8);
 void dsConcatLen(rune **dsptr, const rune *text, dynSize len);
 void dsConcat(rune **dsptr, const rune *text);
-void dsPrintf(rune **dsptr, const rune *format, ...);
-void dsConcatv(rune **dsptr, const rune *format, va_list args);
-void dsConcatf(rune **dsptr, const rune *format, ...);
+//void dsPrintf(rune **dsptr, const rune *format, ...);
+//void dsConcatv(rune **dsptr, const rune *format, va_list args);
+//void dsConcatf(rune **dsptr, const rune *format, ...);
 void dsSetLength(rune **dsptr, dynSize newLength);
 void dsCalcLength(rune **dsptr);
 void dsSetCapacity(rune **dsptr, dynSize newCapacity);
