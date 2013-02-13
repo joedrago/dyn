@@ -5,7 +5,7 @@
 //                  http://www.boost.org/LICENSE_1_0.txt)
 // ---------------------------------------------------------------------------
 
-#include "dynString.h"
+#include "dyn.h"
 
 #include <stdlib.h>
 #include <string.h>

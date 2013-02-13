@@ -1,10 +1,6 @@
 add_library(dyn
+    dyn.h
     dynArray.c
-    dynArray.h
-    dynBase.c
-    dynBase.h
     dynMap.c
-    dynMap.h
     dynString.c
-    dynString.h
 )

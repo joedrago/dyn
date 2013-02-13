@@ -5,8 +5,7 @@
 //                  http://www.boost.org/LICENSE_1_0.txt)
 // ---------------------------------------------------------------------------
 
-#include "dynArray.h"
-#include "dynMap.h"
+#include "dyn.h"
 
 #include <stdlib.h>
 #include <string.h>
@@ -23,17 +22,14 @@
 // ------------------------------------------------------------------------------------------------
 // Hash function declarations
 
-#define USE_MURMUR3
-//#define USE_DJB2
-
-#ifdef USE_MURMUR3
+#ifdef DYN_USE_MURMUR3
 static dynMapHash murmur3string(const unsigned char *str);
 static dynMapHash murmur3int(dynInt i);
 #define HASHSTRING murmur3string
 #define HASHINT murmur3int
 #endif
 
-#ifdef USE_DJB2
+#ifdef DYN_USE_DJB2
 static dynMapHash djb2string(const unsigned char *str);
 static unsigned int djb2int(dynInt i);
 #define HASHSTRING djb2string
@@ -322,7 +318,7 @@ void dmEraseInteger(dynMap *dm, dynInt key, void * /*dynDestroyFunc*/ destroyFun
     }
 }
 
-#ifdef USE_MURMUR3
+#ifdef DYN_USE_MURMUR3
 
 //-----------------------------------------------------------------------------
 // MurmurHash3 was written by Austin Appleby, and is placed in the public
@@ -707,7 +703,7 @@ static dynMapHash murmur3int(dynInt i)
 
 //-----------------------------------------------------------------------------
 
-#ifdef USE_DJB2
+#ifdef DYN_USE_DJB2
 
 static dynMapHash djb2string(const unsigned char *str)
 {

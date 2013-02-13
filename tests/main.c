@@ -5,9 +5,7 @@
 //                  http://www.boost.org/LICENSE_1_0.txt)
 // ---------------------------------------------------------------------------
 
-#include "dynArray.h"
-#include "dynString.h"
-#include "dynMap.h"
+#include "dyn.h"
 
 #include <stdlib.h>
 #include <stdarg.h>
@@ -104,7 +102,7 @@ static void printString(char **str)
 void test_daCreate()
 {
     Object **objects = NULL;
-    daCreate(&objects);
+    daCreate(&objects, 0);
     daDestroy(&objects, NULL);
 }
 
@@ -266,9 +264,8 @@ void test_daSetSize()
 {
     Object **objects = NULL;
     fillObjects(&objects);
-    daSetSize(&objects, 20, (dynDestroyFunc)destroyObject);
+    daSetSize(&objects, 4, (dynDestroyFunc)destroyObject);
     daSetSize(&objects, 2, (dynDestroyFunc)destroyObject);
-    daSetSize(&objects, 20, (dynDestroyFunc)destroyObject);
     daSetSize(&objects, 2, (dynDestroyFunc)destroyObject);
     printObjects(&objects);
     daDestroy(&objects, (dynDestroyFunc)destroyObject);
@@ -278,9 +275,8 @@ void test_daSetSizeP1()
 {
     Object **objects = NULL;
     fillObjects(&objects);
-    daSetSizeP1(&objects, 20, (dynDestroyFuncP1)destroyObjectP1, "daSetSizeP1 p1");
+    daSetSizeP1(&objects, 4, (dynDestroyFuncP1)destroyObjectP1, "daSetSizeP1 p1");
     daSetSizeP1(&objects, 2, (dynDestroyFuncP1)destroyObjectP1, "daSetSizeP1 p1");
-    daSetSizeP1(&objects, 20, (dynDestroyFuncP1)destroyObjectP1, "daSetSizeP1 p1");
     daSetSizeP1(&objects, 2, (dynDestroyFuncP1)destroyObjectP1, "daSetSizeP1 p1");
     printObjects(&objects);
     daDestroy(&objects, (dynDestroyFunc)destroyObject);
@@ -290,9 +286,8 @@ void test_daSetSizeP2()
 {
     Object **objects = NULL;
     fillObjects(&objects);
-    daSetSizeP2(&objects, 20, (dynDestroyFuncP2)destroyObjectP2, "p1", "p2");
+    daSetSizeP2(&objects, 4, (dynDestroyFuncP2)destroyObjectP2, "p1", "p2");
     daSetSizeP2(&objects, 2, (dynDestroyFuncP2)destroyObjectP2, "p1", "p2");
-    daSetSizeP2(&objects, 20, (dynDestroyFuncP2)destroyObjectP2, "p1", "p2");
     daSetSizeP2(&objects, 2, (dynDestroyFuncP2)destroyObjectP2, "p1", "p2");
     printObjects(&objects);
     daDestroy(&objects, (dynDestroyFunc)destroyObject);
