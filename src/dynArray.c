@@ -254,18 +254,18 @@ void daClearStrings(void *daptr)
 // Front/back manipulation
 
 // aka "pop front"
-void *daShift(void *daptr)
+int daShift(void *daptr, void *elementPtr)
 {
     dynArray *da = daGet((char ***)daptr, 0, 0);
     if(da && da->size > 0)
     {
         char **values = dynArrayToValues(da);
-        void *ret = values[0];
-        memmove(values, values + 1, sizeof(char*) * da->size);
+        memcpy(elementPtr, values, da->elementSize);
+        memmove(values, values + 1, da->elementSize * da->size);
         --da->size;
-        return ret;
+        return 1;
     }
-    return NULL;
+    return 0;
 }
 
 void daUnshift(void *daptr, void *p)
@@ -288,15 +288,16 @@ dynSize daPush(void *daptr, void *entry)
     return da->size - 1;
 }
 
-void *daPop(void *daptr)
+int daPop(void *daptr, void *elementPtr)
 {
     dynArray *da = daGet((char ***)daptr, 0, 0);
     if(da && (da->size > 0))
     {
         char **values = dynArrayToValues(da);
-        return values[--da->size];
+        memcpy(elementPtr, &values[--da->size], da->elementSize);
+        return 1;
     }
-    return NULL;
+    return 0;
 }
 
 // ------------------------------------------------------------------------------------------------

@@ -157,7 +157,7 @@ void test_daShift()
     Object **objects = NULL;
     Object *obj;
     fillObjects(&objects);
-    while(obj = daShift(&objects))
+    while(daShift(&objects, &obj))
     {
         printf("Shifted Object: %s\n", obj->name);
         destroyObject(obj);
@@ -193,7 +193,7 @@ void test_daPop()
     Object **objects = NULL;
     Object *obj;
     fillObjects(&objects);
-    while(obj = daPop(&objects))
+    while(daPop(&objects, &obj))
     {
         printf("Popped Object: %s\n", obj->name);
         destroyObject(obj);
