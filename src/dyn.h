@@ -61,12 +61,15 @@ void daClearStrings(void *daptr);
 
 // front/back manipulation
 int daShift(void *daptr, void *elementPtr); // returns false on an empty array
-void daUnshift(void *daptr, void *p);
-dynSize daPush(void *daptr, void *entry);
+void daUnshiftContents(void *daptr, void *p);
+#define daUnshift(DAPTR, P) daUnshiftContents(DAPTR, &(P))
+dynSize daPushContents(void *daptr, void *entry);
+#define daPush(DAPTR, P) daPushContents(DAPTR, &(P))
 int daPop(void *daptr, void *elementPtr); // returns false on an empty array
 
 // random access manipulation
-void daInsert(void *daptr, dynSize index, void *p);
+void daInsertContents(void *daptr, dynSize index, void *p);
+#define daInsert(DAPTR, INDEX, P) daInsertContents(DAPTR, INDEX, &(P))
 void daErase(void *daptr, dynSize index);
 
 // Size manipulation

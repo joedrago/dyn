@@ -15,7 +15,7 @@
 
 #define DYNAMIC_ARRAY_INITIAL_SIZE 2
 
-#define dynArrayToValues(da) (char **)(((char *)da) + sizeof(dynArray))
+#define dynArrayToValues(da) (char *)(((char *)da) + sizeof(dynArray))
 #define dynValuesToArray(daptr) (dynArray *)((char *)(*daptr) - sizeof(dynArray))
 
 // ------------------------------------------------------------------------------------------------
@@ -36,7 +36,7 @@ static dynArray *daChangeCapacity(dynSize newCapacity, dynSize elementSize, char
 {
     dynArray *newArray;
     dynArray *prevArray = NULL;
-    char **newValues;
+    char *newValues;
     if(prevptr && *prevptr)
     {
         prevArray = dynValuesToArray(prevptr);
@@ -59,15 +59,15 @@ static dynArray *daChangeCapacity(dynSize newCapacity, dynSize elementSize, char
     {
         if(prevArray)
         {
-            char **prevValues = dynArrayToValues(prevArray);
+            char *prevValues = dynArrayToValues(prevArray);
             int copyCount = prevArray->size;
             if(copyCount > newArray->capacity)
                 copyCount = newArray->capacity;
-            memcpy(newValues, prevValues, sizeof(char*) * copyCount);
+            memcpy(newValues, prevValues, elementSize * copyCount);
             newArray->size = copyCount;
             free(prevArray);
         }
-        *prevptr = newValues;
+        *prevptr = (char **)newValues;
     }
     return newArray;
 }
@@ -105,8 +105,8 @@ static void daChangeSize(char ***daptr, dynSize newSize)
     }
     if(newSize > da->size)
     {
-        char **values = dynArrayToValues(da);
-        memset(values + da->size, 0, sizeof(char*) * (newSize - da->size));
+        char *values = dynArrayToValues(da);
+        memset(values + (da->elementSize * da->size), 0, da->elementSize * (newSize - da->size));
     }
     da->size = newSize;
 }
@@ -133,10 +133,10 @@ static void daClearRange(dynArray *da, int start, int end, void * destroyFunc)
     if(func)
     {
         int i;
-        char **values = dynArrayToValues(da);
+        char *values = dynArrayToValues(da);
         for(i = start; i < end; ++i)
         {
-            func(values[i]);
+            func(values + (i * da->elementSize));
         }
     }
 }
@@ -147,10 +147,10 @@ static void daClearRangeP1(dynArray *da, int start, int end, void * destroyFunc,
     if(func)
     {
         int i;
-        char **values = dynArrayToValues(da);
+        char *values = dynArrayToValues(da);
         for(i = start; i < end; ++i)
         {
-            func(p1, values[i]);
+            func(p1, values + (i * da->elementSize));
         }
     }
 }
@@ -161,10 +161,10 @@ static void daClearRangeP2(dynArray *da, int start, int end, void * destroyFunc,
     if(func)
     {
         int i;
-        char **values = dynArrayToValues(da);
+        char *values = dynArrayToValues(da);
         for(i = start; i < end; ++i)
         {
-            func(p1, p2, values[i]);
+            func(p1, p2, values + (i * da->elementSize));
         }
     }
 }
@@ -259,32 +259,33 @@ int daShift(void *daptr, void *elementPtr)
     dynArray *da = daGet((char ***)daptr, 0, 0);
     if(da && da->size > 0)
     {
-        char **values = dynArrayToValues(da);
+        char *values = dynArrayToValues(da);
         memcpy(elementPtr, values, da->elementSize);
-        memmove(values, values + 1, da->elementSize * da->size);
         --da->size;
+        memmove(values, values + da->elementSize, da->elementSize * da->size);
         return 1;
     }
     return 0;
 }
 
-void daUnshift(void *daptr, void *p)
+void daUnshiftContents(void *daptr, void *p)
 {
     dynArray *da = daMakeRoom(daptr, 1);
-    char **values = dynArrayToValues(da);
+    char *values = dynArrayToValues(da);
     if(da->size > 0)
     {
-        memmove(values + 1, values, sizeof(char*) * da->size);
+        memmove(values + da->elementSize, values, da->elementSize * da->size);
     }
-    values[0] = p;
+    memcpy(values, p, da->elementSize);
     da->size++;
 }
 
-dynSize daPush(void *daptr, void *entry)
+dynSize daPushContents(void *daptr, void *entry)
 {
     dynArray *da = daMakeRoom(daptr, 1);
-    char **values = dynArrayToValues(da);
-    values[da->size++] = entry;
+    char *values = dynArrayToValues(da);
+    memcpy(values + (da->elementSize * da->size), entry, da->elementSize);
+    ++da->size;
     return da->size - 1;
 }
 
@@ -293,8 +294,9 @@ int daPop(void *daptr, void *elementPtr)
     dynArray *da = daGet((char ***)daptr, 0, 0);
     if(da && (da->size > 0))
     {
-        char **values = dynArrayToValues(da);
-        memcpy(elementPtr, &values[--da->size], da->elementSize);
+        char *values = dynArrayToValues(da);
+        --da->size;
+        memcpy(elementPtr, values + (da->elementSize * da->size), da->elementSize);
         return 1;
     }
     return 0;
@@ -303,18 +305,18 @@ int daPop(void *daptr, void *elementPtr)
 // ------------------------------------------------------------------------------------------------
 // Random access manipulation
 
-void daInsert(void *daptr, dynSize index, void *p)
+void daInsertContents(void *daptr, dynSize index, void *p)
 {
     dynArray *da = daMakeRoom(daptr, 1);
     if((index < 0) || (!da->size) || (index >= da->size))
     {
-        daPush(daptr, p);
+        daPush(daptr, *((char **)p));
     }
     else
     {
-        char **values = dynArrayToValues(da);
-        memmove(values + index + 1, values + index, sizeof(char*) * (da->size - index));
-        values[index] = p;
+        char *values = dynArrayToValues(da);
+        memmove(values + ((index + 1) * da->elementSize), values + (index * da->elementSize), da->elementSize * (da->size - index));
+        memcpy(values + (da->elementSize * index), p, da->elementSize);
         ++da->size;
     }
 }
@@ -322,13 +324,13 @@ void daInsert(void *daptr, dynSize index, void *p)
 void daErase(void *daptr, dynSize index)
 {
     dynArray *da = daGet((char ***)daptr, 0, 0);
-    char **values = dynArrayToValues(da);
+    char *values = dynArrayToValues(da);
     if(!da)
         return;
     if((index < 0) || (!da->size) || (index >= da->size))
         return;
 
-    memmove(values + index, values + index + 1, sizeof(char*) * (da->size - index));
+    memmove(values + (index * da->elementSize), values + ((index + 1) * da->elementSize), da->elementSize * (da->size - index));
     --da->size;
 }
 
@@ -400,12 +402,24 @@ void daSquash(void *daptr)
     {
         int head = 0;
         int tail = 0;
-        char **values = dynArrayToValues(da);
-        for( ; tail < da->size ; tail++)
+        int i;
+        char *values = dynArrayToValues(da);
+        for( ; tail < da->size ; ++tail)
         {
-            if(values[tail] != NULL)
+            int keep = 0;
+            char *src = values + (tail * da->elementSize);
+            for(i = 0; i < da->elementSize; ++i)
             {
-                values[head] = values[tail];
+                if(src[i] != 0)
+                {
+                    keep = 1;
+                    break;
+                }
+            }
+            if(keep)
+            {
+                char *dst = values + (head * da->elementSize);
+                memcpy(dst, src, da->elementSize);
                 head++;
             }
         }
