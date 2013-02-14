@@ -280,6 +280,26 @@ void daUnshiftContents(void *daptr, void *p)
     da->size++;
 }
 
+void daUnshiftU8(void *daptr, dynU8 v)
+{
+    daUnshiftContents(daptr, &v);
+}
+
+void daUnshiftU16(void *daptr, dynU16 v)
+{
+    daUnshiftContents(daptr, &v);
+}
+
+void daUnshiftU32(void *daptr, dynU32 v)
+{
+    daUnshiftContents(daptr, &v);
+}
+
+void daUnshiftF32(void *daptr, dynF32 v)
+{
+    daUnshiftContents(daptr, &v);
+}
+
 dynSize daPushContents(void *daptr, void *entry)
 {
     dynArray *da = daMakeRoom(daptr, 1);
@@ -287,6 +307,26 @@ dynSize daPushContents(void *daptr, void *entry)
     memcpy(values + (da->elementSize * da->size), entry, da->elementSize);
     ++da->size;
     return da->size - 1;
+}
+
+dynSize daPushU8(void *daptr, dynU8 v)
+{
+    daPushContents(daptr, &v);
+}
+
+dynSize daPushU16(void *daptr, dynU16 v)
+{
+    daPushContents(daptr, &v);
+}
+
+dynSize daPushU32(void *daptr, dynU32 v)
+{
+    daPushContents(daptr, &v);
+}
+
+dynSize daPushF32(void *daptr, dynF32 v)
+{
+    daPushContents(daptr, &v);
 }
 
 int daPop(void *daptr, void *elementPtr)
@@ -319,6 +359,26 @@ void daInsertContents(void *daptr, dynSize index, void *p)
         memcpy(values + (da->elementSize * index), p, da->elementSize);
         ++da->size;
     }
+}
+
+void daInsertU8(void *daptr, dynSize index, dynU8 v)
+{
+    daInsertContents(daptr, index, &v);
+}
+
+void daInsertU16(void *daptr, dynSize index, dynU16 v)
+{
+    daInsertContents(daptr, index, &v);
+}
+
+void daInsertU32(void *daptr, dynSize index, dynU32 v)
+{
+    daInsertContents(daptr, index, &v);
+}
+
+void daInsertF32(void *daptr, dynSize index, dynF32 v)
+{
+    daInsertContents(daptr, index, &v);
 }
 
 void daErase(void *daptr, dynSize index)

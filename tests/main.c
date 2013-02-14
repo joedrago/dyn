@@ -361,6 +361,53 @@ void test_daSquash()
     daDestroy(&objects, (dynDestroyFunc)destroyObject);
 }
 
+
+void test_da8()
+{
+    int i;
+    char *chars = NULL;
+
+    daCreate(&chars, sizeof(char));
+    daPushU8(&chars, 'A');
+    daPushU8(&chars, 'B');
+    daPushU8(&chars, 'C');
+    daPushU8(&chars, 'D');
+    for(i = 0; i < daSize(&chars); ++i)
+    {
+        printf("char %d: %c\n", i, chars[i]);
+    }
+    daDestroy(&chars, NULL);
+}
+
+void test_da32()
+{
+    int i;
+    int *ints = NULL;
+    float *floats = NULL;
+
+    daCreate(&ints, sizeof(int));
+    daPushU32(&ints, 5);
+    daPushU32(&ints, 7);
+    daPushU32(&ints, 9);
+    daPushU32(&ints, 11);
+    for(i = 0; i < daSize(&ints); ++i)
+    {
+        printf("int %d: %d\n", i, ints[i]);
+    }
+    daDestroy(&ints, NULL);
+
+    daCreate(&floats, sizeof(float));
+    daPushF32(&floats, 5.0f);
+    daPushF32(&floats, 7.0f);
+    daPushF32(&floats, 9.0f);
+    daPushF32(&floats, 11.0f);
+    for(i = 0; i < daSize(&floats); ++i)
+    {
+        printf("float %d: %2.2f\n", i, floats[i]);
+    }
+    daDestroy(&floats, NULL);
+}
+
 // ------------------------------------------------------------------------------------------------
 // dynString Tests
 
@@ -524,6 +571,8 @@ int main(int argc, char **argv)
 //    TEST(daSetCapacityP2);
     TEST(daCapacity);
     TEST(daSquash);
+    TEST(da8);
+    TEST(da32);
 
     TEST(dsCreate);
     TEST(dsClear);

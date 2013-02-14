@@ -20,6 +20,22 @@
 #define dynInt int
 #endif
 
+#ifndef dynU8
+#define dynU8 unsigned char
+#endif
+
+#ifndef dynU16
+#define dynU16 unsigned short
+#endif
+
+#ifndef dynU32
+#define dynU32 unsigned int
+#endif
+
+#ifndef dynF32
+#define dynF32 float
+#endif
+
 #ifndef dynSize
 #define dynSize int
 #endif
@@ -63,13 +79,25 @@ void daClearStrings(void *daptr);
 int daShift(void *daptr, void *elementPtr); // returns false on an empty array
 void daUnshiftContents(void *daptr, void *p);
 #define daUnshift(DAPTR, P) daUnshiftContents(DAPTR, &(P))
+void daUnshiftU8(void *daptr, dynU8 v);
+void daUnshiftU16(void *daptr, dynU16 v);
+void daUnshiftU32(void *daptr, dynU32 v);
+void daUnshiftF32(void *daptr, dynF32 v);
 dynSize daPushContents(void *daptr, void *entry);
 #define daPush(DAPTR, P) daPushContents(DAPTR, &(P))
+dynSize daPushU8(void *daptr, dynU8 v);
+dynSize daPushU16(void *daptr, dynU16 v);
+dynSize daPushU32(void *daptr, dynU32 v);
+dynSize daPushF32(void *daptr, dynF32 v);
 int daPop(void *daptr, void *elementPtr); // returns false on an empty array
 
 // random access manipulation
 void daInsertContents(void *daptr, dynSize index, void *p);
 #define daInsert(DAPTR, INDEX, P) daInsertContents(DAPTR, INDEX, &(P))
+void daInsertU8(void *daptr, dynSize index, dynU8 v);
+void daInsertU16(void *daptr, dynSize index, dynU16 v);
+void daInsertU32(void *daptr, dynSize index, dynU32 v);
+void daInsertF32(void *daptr, dynSize index, dynF32 v);
 void daErase(void *daptr, dynSize index);
 
 // Size manipulation
