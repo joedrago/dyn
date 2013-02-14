@@ -50,3 +50,70 @@ for(i = 0; i < daSize(&ints); ++i)
 }
 daDestroy(&ints, NULL);
 ```
+
+### Reuse
+
+```C
+int i;
+int *ints = NULL;
+
+daCreate(&ints, sizeof(int));
+daPushU32(&ints, 5);
+daPushU32(&ints, 7);
+
+// Destroys all elements, leaves capacity for reuse
+daClear(&ints, NULL);
+
+daPushU32(&ints, 5);
+daPushU32(&ints, 7);
+daDestroy(&ints, NULL);
+```
+
+### FIFO / Stack
+
+```C
+Object **objects = NULL;
+Object *obj;
+int i;
+for(i = 0; i < 5; ++i)
+{
+    Object *obj = createObject(...);
+    daPush(&objects, obj);
+}
+while(daShift(&objects, &obj))
+{
+    printf("Next item in queue: %s\n", obj->name);
+    destroyObject(&obj);
+}
+for(i = 0; i < 5; ++i)
+{
+    Object *obj = createObject(...);
+    daPush(&objects, obj);
+}
+while(daPop(&objects, &obj))
+{
+    printf("Next item on stack: %s\n", obj->name);
+    destroyObject(&obj);
+}
+daDestroy(&objects, destroyObjectPtr);
+```
+
+### Random insertion / removal
+
+```C
+Object **objects = NULL;
+daInsert(&objects, 0, createObject(...));                // equivalent to daUnshift()
+daInsert(&objects, 1, createObject(...));
+daInsert(&objects, daSize(&objects), createObject(...)); // equivalent to daPush()
+daErase(&objects, 1, destroyObjectPtr);
+daDestroy(&objects, destroyObjectPtr);
+```
+
+### Size manipulation
+
+```C
+int *ints = NULL;
+daCreate(&ints, sizeof(int));
+daSetSize(&ints, 100);       // ints should be 100 0s now
+daDestroy(&ints);
+```
