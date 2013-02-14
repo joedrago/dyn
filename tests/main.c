@@ -408,6 +408,34 @@ void test_da32()
     daDestroy(&floats, NULL);
 }
 
+void test_daStruct()
+{
+    int i;
+    struct derp
+    {
+        int a;
+        int b;
+    } temp, *objs = NULL;
+
+    daCreate(&objs, sizeof(struct derp));
+
+    temp.a = 5;
+    temp.b = 50;
+    daPush(&objs, temp);
+    temp.a = 6;
+    temp.b = 60;
+    daPush(&objs, temp);
+    temp.a = 7;
+    temp.b = 70;
+    daPush(&objs, temp);
+
+    for(i = 0; i < daSize(&objs); ++i)
+    {
+        printf("int %d: %d / %d\n", i, objs[i].a, objs[i].b);
+    }
+    daDestroy(&objs, NULL);
+}
+
 // ------------------------------------------------------------------------------------------------
 // dynString Tests
 
@@ -573,6 +601,7 @@ int main(int argc, char **argv)
     TEST(daSquash);
     TEST(da8);
     TEST(da32);
+    TEST(daStruct);
 
     TEST(dsCreate);
     TEST(dsClear);
