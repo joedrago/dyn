@@ -86,18 +86,25 @@ static dynMapEntry *dmNewEntry(dynMap *dm, dynMapHash hash, void *key)
     int found = 0;
 
     // Create the new entry and bucket it
-    entry = (dynMapEntry *)calloc(1, sizeof(*entry));
-    switch(dm->keyType)
+    entry = (dynMapEntry *)calloc(1, sizeof(*entry) + dm->elementSize);
+    if(dm->flags & DKF_INTEGER)
     {
-    case KEYTYPE_STRING:
-        entry->keyStr = strdup((char *)key);
-        break;
-    case KEYTYPE_INTEGER:
+        // Integer keys
         entry->keyInt = *((int *)key);
-        break;
+    }
+    else
+    {
+        // String keys
+        if(dm->flags & DKF_UNOWNED_KEYS)
+        {
+            entry->keyStr = (char *)key;
+        }
+        else
+        {
+            entry->keyStr = strdup((char *)key);
+        }
     }
     entry->hash = hash;
-    entry->value64 = 0;
     dmBucketEntryChain(dm, entry);
 
     // Steal the chain at the split boundary...
@@ -150,13 +157,14 @@ static void dmRewindSplit(dynMap *dm)
 // ------------------------------------------------------------------------------------------------
 // creation / destruction / cleanup
 
-dynMap *dmCreate(dmKeyType keyType, dynInt estimatedSize)
+dynMap *dmCreate(dmKeyFlags flags, dynSize elementSize)
 {
     dynMap *dm = (dynMap *)calloc(1, sizeof(*dm));
-    dm->keyType = keyType;
+    dm->flags = flags;
     dm->split = 0;
     dm->mod   = INITIAL_MODULUS;
     dm->count = 0;
+    dm->elementSize = (elementSize > 0) ? elementSize : sizeof(dynMapDefaultData);
     daSetSize(&dm->table, dm->mod << 1, NULL);
     return dm;
 }
@@ -173,7 +181,7 @@ void dmDestroy(dynMap *dm, void * /*dynDestroyFunc*/ destroyFunc)
 
 static void dmDestroyEntry(dynMap *dm, dynMapEntry *p)
 {
-    if(dm->keyType == KEYTYPE_STRING)
+    if((dm->flags & (DKF_STRING|DKF_UNOWNED_KEYS)) == DKF_STRING) // string map with owned keys?
     {
         free(p->keyStr);
     }
@@ -192,8 +200,9 @@ void dmClear(dynMap *dm, void * /*dynDestroyFunc*/ destroyFunc)
             while(entry)
             {
                 dynMapEntry *freeme = entry;
-                if(func && entry->valuePtr)
-                    func(entry->valuePtr);
+                void *data = dmEntryData(freeme);
+                if(func)
+                    func(data);
                 entry = entry->next;
                 dmDestroyEntry(dm, freeme);
             }
@@ -261,6 +270,7 @@ void dmEraseString(dynMap *dm, const char *key, void * /*dynDestroyFunc*/ destro
     {
         if(!strcmp(entry->keyStr, key))
         {
+            void *data = dmEntryData(entry);
             if(prev)
             {
                 prev->next = entry->next;
@@ -269,8 +279,8 @@ void dmEraseString(dynMap *dm, const char *key, void * /*dynDestroyFunc*/ destro
             {
                 dm->table[index] = entry->next;
             }
-            if(func && entry->valuePtr)
-                func(entry->valuePtr);
+            if(func)
+                func(data);
             dmDestroyEntry(dm, entry);
             --dm->count;
             dmRewindSplit(dm);
@@ -300,6 +310,7 @@ void dmEraseInteger(dynMap *dm, dynInt key, void * /*dynDestroyFunc*/ destroyFun
     {
         if(entry->keyInt == key)
         {
+            void *data = dmEntryData(entry);
             if(prev)
             {
                 prev->next = entry->next;
@@ -308,14 +319,22 @@ void dmEraseInteger(dynMap *dm, dynInt key, void * /*dynDestroyFunc*/ destroyFun
             {
                 dm->table[index] = entry->next;
             }
-            if(func && entry->valuePtr)
-                func(entry->valuePtr);
+            if(func)
+                func(data);
             dmDestroyEntry(dm, entry);
             --dm->count;
             dmRewindSplit(dm);
             return;
         }
     }
+}
+
+// ------------------------------------------------------------------------------------------------
+// Entry funcs
+
+void *dmEntryData(dynMapEntry *entry)
+{
+    return (void *)(((char *)entry) + sizeof(dynMapEntry));
 }
 
 #ifdef DYN_USE_MURMUR3

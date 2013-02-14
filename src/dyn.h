@@ -114,11 +114,14 @@ void daSquash(void *daptr);
 // ---------------------------------------------------------------------------
 // Map
 
-typedef enum dmKeyType
+typedef enum dmKeyFlags
 {
-    KEYTYPE_STRING = 1,
-    KEYTYPE_INTEGER
-} dmKeyType;
+    // mutually exclusive
+    DKF_STRING       = (1 << 0),
+    DKF_INTEGER      = (1 << 1),
+
+    DKF_UNOWNED_KEYS = (1 << 2) // does not own/strdup string keys; meaningless on INTEGER maps
+} dmKeyFlags;
 
 typedef struct dynMapEntry
 {
@@ -127,26 +130,32 @@ typedef struct dynMapEntry
         char *keyStr;
         dynInt keyInt;
     };
+    struct dynMapEntry *next;
+    dynMapHash hash;
+    // data is immediately following every entry's allocated block
+} dynMapEntry;
+
+typedef struct dynMapDefaultData
+{
     union
     {
         void *valuePtr;
         dynInt valueInt;
         long long value64;
     };
-    struct dynMapEntry *next;
-    dynMapHash hash;
-} dynMapEntry;
+} dynMapDefaultData;
 
 typedef struct dynMap
 {
     dynMapEntry **table; // Hash table daArray
     dynSize split;       // Linear Hashing 'split'
     dynSize mod;         // pre-split modulus (use mod*2 for overflow)
-    int keyType;
+    dynSize elementSize;
+    int flags;
     int count;           // count tracking for convenience
 } dynMap;
 
-dynMap *dmCreate(dmKeyType keyType, dynInt estimatedSize);
+dynMap *dmCreate(dmKeyFlags flags, dynSize elementSize);
 void dmDestroy(dynMap *dm, void * /*dynDestroyFunc*/ destroyFunc);
 void dmClear(dynMap *dm, void * /*dynDestroyFunc*/ destroyFunc);
 
@@ -158,12 +167,22 @@ dynMapEntry *dmGetInteger(dynMap *dm, dynInt key);
 int dmHasInteger(dynMap *dm, dynInt key);
 void dmEraseInteger(dynMap *dm, dynInt key, void * /*dynDestroyFunc*/ destroyFunc);
 
+void *dmEntryData(dynMapEntry *entry);
+
 // Convenience macros
 
-#define dmGetS2P(MAP, KEY) (dmGetString(MAP, KEY)->valuePtr)
-#define dmGetS2I(MAP, KEY) (dmGetString(MAP, KEY)->valueInt)
-#define dmGetI2P(MAP, KEY) (dmGetInteger(MAP, KEY)->valuePtr)
-#define dmGetI2I(MAP, KEY) (dmGetInteger(MAP, KEY)->valueInt)
+// "to string/integer pointers"
+#define dmEntryDefaultData(E) ((dynMapDefaultData *)dmEntryData(E))
+#define dmGetS2P(MAP, KEY) (dmEntryDefaultData(dmGetString(MAP, KEY))->valuePtr)
+#define dmGetS2I(MAP, KEY) (dmEntryDefaultData(dmGetString(MAP, KEY))->valueInt)
+#define dmGetI2P(MAP, KEY) (dmEntryDefaultData(dmGetInteger(MAP, KEY))->valuePtr)
+#define dmGetI2I(MAP, KEY) (dmEntryDefaultData(dmGetInteger(MAP, KEY))->valueInt)
+
+// "to 'Type' (custom structures / ptrs)"
+#define dmGetS2T(MAP, TYPE, KEY) ((TYPE*)dmEntryData(dmGetString(MAP, KEY)))
+#define dmGetI2T(MAP, TYPE, KEY) ((TYPE*)dmEntryData(dmGetInteger(MAP, KEY)))
+
+// existence check aliases
 #define dmHasS dmHasString
 #define dmHasI dmHasInteger
 

@@ -411,13 +411,13 @@ void test_da32()
 void test_daStruct()
 {
     int i;
-    struct derp
+    struct CustomStruct
     {
         int a;
         int b;
     } temp, *objs = NULL;
 
-    daCreate(&objs, sizeof(struct derp));
+    daCreate(&objs, sizeof(struct CustomStruct));
 
     temp.a = 5;
     temp.b = 50;
@@ -532,7 +532,16 @@ void test_dsSetCapacity()
 
 void test_dmGetS()
 {
-    dynMap *dm = dmCreate(KEYTYPE_STRING, 0);
+    dynMap *dm = dmCreate(DKF_STRING | DKF_UNOWNED_KEYS, 0);
+    dmGetS2P(dm, "Foo") = "A";
+    dmGetS2P(dm, "Bar") = "B";
+    dmGetS2P(dm, "Baz") = "C";
+    printf("Foo: %s\n", (char *)dmGetS2P(dm, "Foo"));
+    printf("Bar: %s\n", (char *)dmGetS2P(dm, "Bar"));
+    printf("Baz: %s\n", (char *)dmGetS2P(dm, "Baz"));
+    dmDestroy(dm, NULL);
+
+    dm = dmCreate(DKF_STRING, 0);
     dmGetS2P(dm, "Foo") = "A";
     dmGetS2P(dm, "Bar") = "B";
     dmGetS2P(dm, "Baz") = "C";
@@ -545,7 +554,7 @@ void test_dmGetS()
 #define GETI_COUNT 100000
 void test_dmGetI()
 {
-    dynMap *dm = dmCreate(KEYTYPE_INTEGER, 0);
+    dynMap *dm = dmCreate(DKF_INTEGER, 0);
     int i;
     printf("count: %d, mod: %d, split: %d, width: %d, capacity: %d\n", dm->count, dm->mod, dm->split, daSize(&dm->table), daCapacity(&dm->table));
     for(i = 0; i < GETI_COUNT; ++i)
@@ -559,6 +568,32 @@ void test_dmGetI()
     }
     printf("count: %d, mod: %d, split: %d, width: %d, capacity: %d\n", dm->count, dm->mod, dm->split, daSize(&dm->table), daCapacity(&dm->table));
     dmDestroy(dm, NULL);
+}
+
+void test_dmCustom()
+{
+    typedef struct CustomStruct
+    {
+        int a;
+        int b;
+    } CustomStruct;
+    int i;
+    dynMap *dm = dmCreate(DKF_INTEGER, sizeof(CustomStruct));
+
+    for(i = 0; i < 5; ++i)
+    {
+        CustomStruct *p = dmGetI2T(dm, CustomStruct, i);
+        p->a = i * 5;
+        p->b = i * 10;
+    }
+
+    for(i = 0; i < 5; ++i)
+    {
+        CustomStruct *p = dmGetI2T(dm, CustomStruct, i);
+        printf("entry %d: %d / %d\n", i, p->a, p->b);
+    }
+
+    dmDestroy(dm, NULL); // CustomStruct is freed along with the entry
 }
 
 // ------------------------------------------------------------------------------------------------
@@ -613,6 +648,7 @@ int main(int argc, char **argv)
 
     TEST(dmGetS);
     TEST(dmGetI);
+    TEST(dmCustom);
 
     printf("\nTotal errors: %d\n\n", totalErrors);
     return 0;
