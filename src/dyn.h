@@ -66,27 +66,27 @@ typedef void (*dynDestroyFuncP2)(void *p1, void *p2, void *p);
 
 // creation / destruction / cleanup
 void daCreate(void *daptr, dynSize elementSize); // use elementSize=0 for "pointer sized"
-void daDestroyContents(void *daptr, void * /*dynDestroyFunc*/ destroyFunc);
-void daDestroyPtr(void *daptr, void * /*dynDestroyFunc*/ destroyFunc);
+void daDestroyIndirect(void *daptr, void * /*dynDestroyFunc*/ destroyFunc);
+void daDestroy(void *daptr, void * /*dynDestroyFunc*/ destroyFunc);
 void daDestroyP1(void *daptr, void * /*dynDestroyFuncP1*/ destroyFunc, void *p1);
 void daDestroyP2(void *daptr, void * /*dynDestroyFuncP2*/ destroyFunc, void *p1, void *p2);
 void daDestroyStrings(void *daptr);
-void daClearContents(void *daptr, void * /*dynDestroyFunc*/ destroyFunc);
-void daClearPtr(void *daptr, void * /*dynDestroyFunc*/ destroyFunc);
+void daClearIndirect(void *daptr, void * /*dynDestroyFunc*/ destroyFunc);
+void daClear(void *daptr, void * /*dynDestroyFunc*/ destroyFunc);
 void daClearP1(void *daptr, void * /*dynDestroyFuncP1*/ destroyFunc, void *p1);
 void daClearP2(void *daptr, void * /*dynDestroyFuncP2*/ destroyFunc, void *p1, void *p2);
 void daClearStrings(void *daptr);
 
 // front/back manipulation
 int daShift(void *daptr, void *elementPtr); // returns false on an empty array
-void daUnshiftContents(void *daptr, void *p);
-#define daUnshift(DAPTR, P) daUnshiftContents(DAPTR, &(P))
+void daUnshiftIndirect(void *daptr, void *p);
+#define daUnshift(DAPTR, P) daUnshiftIndirect(DAPTR, &(P))
 void daUnshiftU8(void *daptr, dynU8 v);
 void daUnshiftU16(void *daptr, dynU16 v);
 void daUnshiftU32(void *daptr, dynU32 v);
 void daUnshiftF32(void *daptr, dynF32 v);
-dynSize daPushContents(void *daptr, void *entry);
-#define daPush(DAPTR, P) daPushContents(DAPTR, &(P))
+dynSize daPushIndirect(void *daptr, void *entry);
+#define daPush(DAPTR, P) daPushIndirect(DAPTR, &(P))
 dynSize daPushU8(void *daptr, dynU8 v);
 dynSize daPushU16(void *daptr, dynU16 v);
 dynSize daPushU32(void *daptr, dynU32 v);
@@ -94,8 +94,8 @@ dynSize daPushF32(void *daptr, dynF32 v);
 int daPop(void *daptr, void *elementPtr); // returns false on an empty array
 
 // random access manipulation
-void daInsertContents(void *daptr, dynSize index, void *p);
-#define daInsert(DAPTR, INDEX, P) daInsertContents(DAPTR, INDEX, &(P))
+void daInsertIndirect(void *daptr, dynSize index, void *p);
+#define daInsert(DAPTR, INDEX, P) daInsertIndirect(DAPTR, INDEX, &(P))
 void daInsertU8(void *daptr, dynSize index, dynU8 v);
 void daInsertU16(void *daptr, dynSize index, dynU16 v);
 void daInsertU32(void *daptr, dynSize index, dynU32 v);
@@ -158,10 +158,10 @@ typedef struct dynMap
 } dynMap;
 
 dynMap *dmCreate(dmKeyFlags flags, dynSize elementSize);
-void dmDestroyContents(dynMap *dm, void * /*dynDestroyFunc*/ destroyFunc);
-void dmDestroyPtr(dynMap *dm, void * /*dynDestroyFunc*/ destroyFunc);
-void dmClearContents(dynMap *dm, void * /*dynDestroyFunc*/ destroyFunc);
-void dmClearPtr(dynMap *dm, void * /*dynDestroyFunc*/ destroyFunc);
+void dmDestroyIndirect(dynMap *dm, void * /*dynDestroyFunc*/ destroyFunc);
+void dmDestroy(dynMap *dm, void * /*dynDestroyFunc*/ destroyFunc);
+void dmClearIndirect(dynMap *dm, void * /*dynDestroyFunc*/ destroyFunc);
+void dmClear(dynMap *dm, void * /*dynDestroyFunc*/ destroyFunc);
 
 dynMapEntry *dmGetString(dynMap *dm, const char *key);
 int dmHasString(dynMap *dm, const char *key);

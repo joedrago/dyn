@@ -185,23 +185,23 @@ void daCreate(void *daptr, dynSize elementSize)
     daGet(daptr, elementSize, 1);
 }
 
-void daDestroyContents(void *daptr, void * destroyFunc)
+void daDestroyIndirect(void *daptr, void * destroyFunc)
 {
     dynArray *da = daGet((char ***)daptr, 0, 0);
     if(da)
     {
-        daClearContents(daptr, destroyFunc);
+        daClearIndirect(daptr, destroyFunc);
         free(da);
         *((char ***)daptr) = NULL;
     }
 }
 
-void daDestroyPtr(void *daptr, void * destroyFunc)
+void daDestroy(void *daptr, void * destroyFunc)
 {
     dynArray *da = daGet((char ***)daptr, 0, 0);
     if(da)
     {
-        daClearPtr(daptr, destroyFunc);
+        daClear(daptr, destroyFunc);
         free(da);
         *((char ***)daptr) = NULL;
     }
@@ -209,7 +209,7 @@ void daDestroyPtr(void *daptr, void * destroyFunc)
 
 void daDestroyStrings(void *daptr)
 {
-    daDestroyPtr(daptr, dsDestroyIndirect);
+    daDestroy(daptr, dsDestroyIndirect);
 }
 
 void daDestroyP1(void *daptr, void * destroyFunc, void *p1)
@@ -234,7 +234,7 @@ void daDestroyP2(void *daptr, void * destroyFunc, void *p1, void *p2)
     }
 }
 
-void daClearContents(void *daptr, void * destroyFunc)
+void daClearIndirect(void *daptr, void * destroyFunc)
 {
     dynArray *da = daGet((char ***)daptr, 0, 0);
     if(da)
@@ -244,7 +244,7 @@ void daClearContents(void *daptr, void * destroyFunc)
     }
 }
 
-void daClearPtr(void *daptr, void * destroyFunc)
+void daClear(void *daptr, void * destroyFunc)
 {
     dynArray *da = daGet((char ***)daptr, 0, 0);
     if(da)
@@ -276,7 +276,7 @@ void daClearP2(void *daptr, void * destroyFunc, void *p1, void *p2)
 
 void daClearStrings(void *daptr)
 {
-    daClearPtr(daptr, dsDestroyIndirect);
+    daClear(daptr, dsDestroyIndirect);
 }
 
 // ------------------------------------------------------------------------------------------------
@@ -297,7 +297,7 @@ int daShift(void *daptr, void *elementPtr)
     return 0;
 }
 
-void daUnshiftContents(void *daptr, void *p)
+void daUnshiftIndirect(void *daptr, void *p)
 {
     dynArray *da = daMakeRoom(daptr, 1);
     char *values = dynArrayToValues(da);
@@ -311,25 +311,25 @@ void daUnshiftContents(void *daptr, void *p)
 
 void daUnshiftU8(void *daptr, dynU8 v)
 {
-    daUnshiftContents(daptr, &v);
+    daUnshiftIndirect(daptr, &v);
 }
 
 void daUnshiftU16(void *daptr, dynU16 v)
 {
-    daUnshiftContents(daptr, &v);
+    daUnshiftIndirect(daptr, &v);
 }
 
 void daUnshiftU32(void *daptr, dynU32 v)
 {
-    daUnshiftContents(daptr, &v);
+    daUnshiftIndirect(daptr, &v);
 }
 
 void daUnshiftF32(void *daptr, dynF32 v)
 {
-    daUnshiftContents(daptr, &v);
+    daUnshiftIndirect(daptr, &v);
 }
 
-dynSize daPushContents(void *daptr, void *entry)
+dynSize daPushIndirect(void *daptr, void *entry)
 {
     dynArray *da = daMakeRoom(daptr, 1);
     char *values = dynArrayToValues(da);
@@ -340,22 +340,22 @@ dynSize daPushContents(void *daptr, void *entry)
 
 dynSize daPushU8(void *daptr, dynU8 v)
 {
-    daPushContents(daptr, &v);
+    daPushIndirect(daptr, &v);
 }
 
 dynSize daPushU16(void *daptr, dynU16 v)
 {
-    daPushContents(daptr, &v);
+    daPushIndirect(daptr, &v);
 }
 
 dynSize daPushU32(void *daptr, dynU32 v)
 {
-    daPushContents(daptr, &v);
+    daPushIndirect(daptr, &v);
 }
 
 dynSize daPushF32(void *daptr, dynF32 v)
 {
-    daPushContents(daptr, &v);
+    daPushIndirect(daptr, &v);
 }
 
 int daPop(void *daptr, void *elementPtr)
@@ -374,7 +374,7 @@ int daPop(void *daptr, void *elementPtr)
 // ------------------------------------------------------------------------------------------------
 // Random access manipulation
 
-void daInsertContents(void *daptr, dynSize index, void *p)
+void daInsertIndirect(void *daptr, dynSize index, void *p)
 {
     dynArray *da = daMakeRoom(daptr, 1);
     if((index < 0) || (!da->size) || (index >= da->size))
@@ -392,22 +392,22 @@ void daInsertContents(void *daptr, dynSize index, void *p)
 
 void daInsertU8(void *daptr, dynSize index, dynU8 v)
 {
-    daInsertContents(daptr, index, &v);
+    daInsertIndirect(daptr, index, &v);
 }
 
 void daInsertU16(void *daptr, dynSize index, dynU16 v)
 {
-    daInsertContents(daptr, index, &v);
+    daInsertIndirect(daptr, index, &v);
 }
 
 void daInsertU32(void *daptr, dynSize index, dynU32 v)
 {
-    daInsertContents(daptr, index, &v);
+    daInsertIndirect(daptr, index, &v);
 }
 
 void daInsertF32(void *daptr, dynSize index, dynF32 v)
 {
-    daInsertContents(daptr, index, &v);
+    daInsertIndirect(daptr, index, &v);
 }
 
 void daErase(void *daptr, dynSize index)
@@ -426,14 +426,14 @@ void daErase(void *daptr, dynSize index)
 // ------------------------------------------------------------------------------------------------
 // Size manipulation
 
-void daSetSizeContents(void *daptr, dynSize newSize, void * destroyFunc)
+void daSetSizeIndirect(void *daptr, dynSize newSize, void * destroyFunc)
 {
     dynArray *da = daGet((char ***)daptr, 0, 1);
     daClearRange(da, newSize, da->size, destroyFunc, 0);
     daChangeSize(daptr, newSize);
 }
 
-void daSetSizePtr(void *daptr, dynSize newSize, void * destroyFunc)
+void daSetSize(void *daptr, dynSize newSize, void * destroyFunc)
 {
     dynArray *da = daGet((char ***)daptr, 0, 1);
     daClearRange(da, newSize, da->size, destroyFunc, 1);
@@ -462,14 +462,14 @@ dynSize daSize(void *daptr)
     return 0;
 }
 
-void daSetCapacityContents(void *daptr, dynSize newCapacity, void * destroyFunc)
+void daSetCapacityIndirect(void *daptr, dynSize newCapacity, void * destroyFunc)
 {
     dynArray *da = daGet((char ***)daptr, 0, 1);
     daClearRange(da, newCapacity, da->size, destroyFunc, 0);
     daChangeCapacity(newCapacity, 0, daptr);
 }
 
-void daSetCapacityPtr(void *daptr, dynSize newCapacity, void * destroyFunc)
+void daSetCapacity(void *daptr, dynSize newCapacity, void * destroyFunc)
 {
     dynArray *da = daGet((char ***)daptr, 0, 1);
     daClearRange(da, newCapacity, da->size, destroyFunc, 1);

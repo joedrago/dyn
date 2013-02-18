@@ -10,7 +10,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-// A quick thanks to the author or this web page:
+// A quick thanks to the author of this web page:
 //
 // http://www.concentric.net/~ttwang/tech/sorthash.htm
 //
@@ -118,7 +118,7 @@ static dynMapEntry *dmNewEntry(dynMap *dm, dynMapHash hash, void *key)
         // It is time to grow our linear hash!
         dm->mod *= 2;
         dm->split = 0;
-        daSetSizePtr(&dm->table, dm->mod << 1, NULL);
+        daSetSize(&dm->table, dm->mod << 1, NULL);
     }
 
     // ... and reattach the stolen chain.
@@ -138,12 +138,12 @@ static void dmRewindSplit(dynMap *dm)
     {
         dm->mod >>= 1;
         dm->split = dm->mod - 1;
-        daSetSizePtr(&dm->table, dm->mod << 1, NULL);
+        daSetSize(&dm->table, dm->mod << 1, NULL);
 
         // Time to shrink!
         if((daSize(&dm->table) * SHRINK_FACTOR) < daCapacity(&dm->table))
         {
-            daSetCapacityPtr(&dm->table, daSize(&dm->table) * SHRINK_FACTOR, NULL); // Should be no need to destroy anything
+            daSetCapacity(&dm->table, daSize(&dm->table) * SHRINK_FACTOR, NULL); // Should be no need to destroy anything
         }
     }
 
@@ -165,26 +165,26 @@ dynMap *dmCreate(dmKeyFlags flags, dynSize elementSize)
     dm->mod   = INITIAL_MODULUS;
     dm->count = 0;
     dm->elementSize = (elementSize > 0) ? elementSize : sizeof(dynMapDefaultData);
-    daSetSizePtr(&dm->table, dm->mod << 1, NULL);
+    daSetSize(&dm->table, dm->mod << 1, NULL);
     return dm;
 }
 
-void dmDestroyContents(dynMap *dm, void * /*dynDestroyFunc*/ destroyFunc)
+void dmDestroyIndirect(dynMap *dm, void * /*dynDestroyFunc*/ destroyFunc)
 {
     if(dm)
     {
-        dmClearContents(dm, destroyFunc);
-        daDestroyContents(&dm->table, NULL);
+        dmClearIndirect(dm, destroyFunc);
+        daDestroyIndirect(&dm->table, NULL);
         free(dm);
     }
 }
 
-void dmDestroyPtr(dynMap *dm, void * /*dynDestroyFunc*/ destroyFunc)
+void dmDestroy(dynMap *dm, void * /*dynDestroyFunc*/ destroyFunc)
 {
     if(dm)
     {
-        dmClearPtr(dm, destroyFunc);
-        daDestroyContents(&dm->table, NULL);
+        dmClear(dm, destroyFunc);
+        daDestroyIndirect(&dm->table, NULL);
         free(dm);
     }
 }
@@ -231,12 +231,12 @@ static void dmClearInternal(dynMap *dm, void * /*dynDestroyFunc*/ destroyFunc, i
     }
 }
 
-void dmClearContents(dynMap *dm, void * /*dynDestroyFunc*/ destroyFunc)
+void dmClearIndirect(dynMap *dm, void * /*dynDestroyFunc*/ destroyFunc)
 {
     dmClearInternal(dm, destroyFunc, 0);
 }
 
-void dmClearPtr(dynMap *dm, void * /*dynDestroyFunc*/ destroyFunc)
+void dmClear(dynMap *dm, void * /*dynDestroyFunc*/ destroyFunc)
 {
     dmClearInternal(dm, destroyFunc, 1);
 }
