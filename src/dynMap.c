@@ -118,7 +118,7 @@ static dynMapEntry *dmNewEntry(dynMap *dm, dynMapHash hash, void *key)
         // It is time to grow our linear hash!
         dm->mod *= 2;
         dm->split = 0;
-        daSetSize(&dm->table, dm->mod << 1, NULL);
+        daSetSizePtr(&dm->table, dm->mod << 1, NULL);
     }
 
     // ... and reattach the stolen chain.
@@ -138,12 +138,12 @@ static void dmRewindSplit(dynMap *dm)
     {
         dm->mod >>= 1;
         dm->split = dm->mod - 1;
-        daSetSize(&dm->table, dm->mod << 1, NULL);
+        daSetSizePtr(&dm->table, dm->mod << 1, NULL);
 
         // Time to shrink!
         if((daSize(&dm->table) * SHRINK_FACTOR) < daCapacity(&dm->table))
         {
-            daSetCapacity(&dm->table, daSize(&dm->table) * SHRINK_FACTOR, NULL); // Should be no need to destroy anything
+            daSetCapacityPtr(&dm->table, daSize(&dm->table) * SHRINK_FACTOR, NULL); // Should be no need to destroy anything
         }
     }
 
@@ -165,16 +165,26 @@ dynMap *dmCreate(dmKeyFlags flags, dynSize elementSize)
     dm->mod   = INITIAL_MODULUS;
     dm->count = 0;
     dm->elementSize = (elementSize > 0) ? elementSize : sizeof(dynMapDefaultData);
-    daSetSize(&dm->table, dm->mod << 1, NULL);
+    daSetSizePtr(&dm->table, dm->mod << 1, NULL);
     return dm;
 }
 
-void dmDestroy(dynMap *dm, void * /*dynDestroyFunc*/ destroyFunc)
+void dmDestroyContents(dynMap *dm, void * /*dynDestroyFunc*/ destroyFunc)
 {
     if(dm)
     {
-        dmClear(dm, destroyFunc);
-        daDestroy(&dm->table, NULL);
+        dmClearContents(dm, destroyFunc);
+        daDestroyContents(&dm->table, NULL);
+        free(dm);
+    }
+}
+
+void dmDestroyPtr(dynMap *dm, void * /*dynDestroyFunc*/ destroyFunc)
+{
+    if(dm)
+    {
+        dmClearPtr(dm, destroyFunc);
+        daDestroyContents(&dm->table, NULL);
         free(dm);
     }
 }
@@ -188,7 +198,7 @@ static void dmDestroyEntry(dynMap *dm, dynMapEntry *p)
     free(p);
 }
 
-void dmClear(dynMap *dm, void * /*dynDestroyFunc*/ destroyFunc)
+static void dmClearInternal(dynMap *dm, void * /*dynDestroyFunc*/ destroyFunc, int ptrs)
 {
     dynDestroyFunc func = destroyFunc;
     if(dm)
@@ -202,13 +212,33 @@ void dmClear(dynMap *dm, void * /*dynDestroyFunc*/ destroyFunc)
                 dynMapEntry *freeme = entry;
                 void *data = dmEntryData(freeme);
                 if(func)
-                    func(data);
+                {
+                    if(ptrs)
+                    {
+                        char **p = (char **)data;
+                        func(*p);
+                    }
+                    else
+                    {
+                        func(data);
+                    }
+                }
                 entry = entry->next;
                 dmDestroyEntry(dm, freeme);
             }
         }
         memset(dm->table, 0, daSize(&dm->table) * sizeof(dynMapEntry*));
     }
+}
+
+void dmClearContents(dynMap *dm, void * /*dynDestroyFunc*/ destroyFunc)
+{
+    dmClearInternal(dm, destroyFunc, 0);
+}
+
+void dmClearPtr(dynMap *dm, void * /*dynDestroyFunc*/ destroyFunc)
+{
+    dmClearInternal(dm, destroyFunc, 1);
 }
 
 static dynMapEntry *dmFindString(dynMap *dm, const char *key, int autoCreate)
@@ -325,6 +355,26 @@ void dmEraseInteger(dynMap *dm, dynInt key, void * /*dynDestroyFunc*/ destroyFun
             --dm->count;
             dmRewindSplit(dm);
             return;
+        }
+    }
+}
+
+// ------------------------------------------------------------------------------------------------
+// Iteration
+
+//typedef void (*dynMapIterateFunc)(dynMap *dm, dynMapEntry *e, void *userData);
+
+void dmIterate(dynMap *dm, /* dynMapIterateFunc */ void *func, void *userData)
+{
+    dynMapIterateFunc itFunc = (dynMapIterateFunc)func;
+    int bucketCount = dm->split + dm->mod;
+    int i;
+    for(i = 0; i < bucketCount; ++i)
+    {
+        dynMapEntry *entry = dm->table[i];
+        for( ; entry; entry = entry->next)
+        {
+            itFunc(dm, entry, userData);
         }
     }
 }

@@ -127,7 +127,7 @@ static dynArray *daMakeRoom(char ***daptr, int incomingCount)
 }
 
 // clears [start, (end-1)]
-static void daClearRange(dynArray *da, int start, int end, void * destroyFunc)
+static void daClearRange(dynArray *da, int start, int end, void * destroyFunc, int ptrs)
 {
     dynDestroyFunc func = destroyFunc;
     if(func)
@@ -136,7 +136,15 @@ static void daClearRange(dynArray *da, int start, int end, void * destroyFunc)
         char *values = dynArrayToValues(da);
         for(i = start; i < end; ++i)
         {
-            func(values + (i * da->elementSize));
+            if(ptrs)
+            {
+                char **ptr = (char **)(values + (i * da->elementSize));
+                func(*ptr);
+            }
+            else
+            {
+                func(values + (i * da->elementSize));
+            }
         }
     }
 }
@@ -177,12 +185,23 @@ void daCreate(void *daptr, dynSize elementSize)
     daGet(daptr, elementSize, 1);
 }
 
-void daDestroy(void *daptr, void * destroyFunc)
+void daDestroyContents(void *daptr, void * destroyFunc)
 {
     dynArray *da = daGet((char ***)daptr, 0, 0);
     if(da)
     {
-        daClear(daptr, destroyFunc);
+        daClearContents(daptr, destroyFunc);
+        free(da);
+        *((char ***)daptr) = NULL;
+    }
+}
+
+void daDestroyPtr(void *daptr, void * destroyFunc)
+{
+    dynArray *da = daGet((char ***)daptr, 0, 0);
+    if(da)
+    {
+        daClearPtr(daptr, destroyFunc);
         free(da);
         *((char ***)daptr) = NULL;
     }
@@ -190,7 +209,7 @@ void daDestroy(void *daptr, void * destroyFunc)
 
 void daDestroyStrings(void *daptr)
 {
-    daDestroy(daptr, dsDestroyIndirect);
+    daDestroyPtr(daptr, dsDestroyIndirect);
 }
 
 void daDestroyP1(void *daptr, void * destroyFunc, void *p1)
@@ -215,12 +234,22 @@ void daDestroyP2(void *daptr, void * destroyFunc, void *p1, void *p2)
     }
 }
 
-void daClear(void *daptr, void * destroyFunc)
+void daClearContents(void *daptr, void * destroyFunc)
 {
     dynArray *da = daGet((char ***)daptr, 0, 0);
     if(da)
     {
-        daClearRange(da, 0, da->size, destroyFunc);
+        daClearRange(da, 0, da->size, destroyFunc, 0);
+        da->size = 0;
+    }
+}
+
+void daClearPtr(void *daptr, void * destroyFunc)
+{
+    dynArray *da = daGet((char ***)daptr, 0, 0);
+    if(da)
+    {
+        daClearRange(da, 0, da->size, destroyFunc, 1);
         da->size = 0;
     }
 }
@@ -247,7 +276,7 @@ void daClearP2(void *daptr, void * destroyFunc, void *p1, void *p2)
 
 void daClearStrings(void *daptr)
 {
-    daClear(daptr, dsDestroyIndirect);
+    daClearPtr(daptr, dsDestroyIndirect);
 }
 
 // ------------------------------------------------------------------------------------------------
@@ -397,10 +426,17 @@ void daErase(void *daptr, dynSize index)
 // ------------------------------------------------------------------------------------------------
 // Size manipulation
 
-void daSetSize(void *daptr, dynSize newSize, void * destroyFunc)
+void daSetSizeContents(void *daptr, dynSize newSize, void * destroyFunc)
 {
     dynArray *da = daGet((char ***)daptr, 0, 1);
-    daClearRange(da, newSize, da->size, destroyFunc);
+    daClearRange(da, newSize, da->size, destroyFunc, 0);
+    daChangeSize(daptr, newSize);
+}
+
+void daSetSizePtr(void *daptr, dynSize newSize, void * destroyFunc)
+{
+    dynArray *da = daGet((char ***)daptr, 0, 1);
+    daClearRange(da, newSize, da->size, destroyFunc, 1);
     daChangeSize(daptr, newSize);
 }
 
@@ -426,10 +462,17 @@ dynSize daSize(void *daptr)
     return 0;
 }
 
-void daSetCapacity(void *daptr, dynSize newCapacity, void * destroyFunc)
+void daSetCapacityContents(void *daptr, dynSize newCapacity, void * destroyFunc)
 {
     dynArray *da = daGet((char ***)daptr, 0, 1);
-    daClearRange(da, newCapacity, da->size, destroyFunc);
+    daClearRange(da, newCapacity, da->size, destroyFunc, 0);
+    daChangeCapacity(newCapacity, 0, daptr);
+}
+
+void daSetCapacityPtr(void *daptr, dynSize newCapacity, void * destroyFunc)
+{
+    dynArray *da = daGet((char ***)daptr, 0, 1);
+    daClearRange(da, newCapacity, da->size, destroyFunc, 1);
     daChangeCapacity(newCapacity, 0, daptr);
 }
 

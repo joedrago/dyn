@@ -66,11 +66,13 @@ typedef void (*dynDestroyFuncP2)(void *p1, void *p2, void *p);
 
 // creation / destruction / cleanup
 void daCreate(void *daptr, dynSize elementSize); // use elementSize=0 for "pointer sized"
-void daDestroy(void *daptr, void * /*dynDestroyFunc*/ destroyFunc);
+void daDestroyContents(void *daptr, void * /*dynDestroyFunc*/ destroyFunc);
+void daDestroyPtr(void *daptr, void * /*dynDestroyFunc*/ destroyFunc);
 void daDestroyP1(void *daptr, void * /*dynDestroyFuncP1*/ destroyFunc, void *p1);
 void daDestroyP2(void *daptr, void * /*dynDestroyFuncP2*/ destroyFunc, void *p1, void *p2);
 void daDestroyStrings(void *daptr);
-void daClear(void *daptr, void * /*dynDestroyFunc*/ destroyFunc);
+void daClearContents(void *daptr, void * /*dynDestroyFunc*/ destroyFunc);
+void daClearPtr(void *daptr, void * /*dynDestroyFunc*/ destroyFunc);
 void daClearP1(void *daptr, void * /*dynDestroyFuncP1*/ destroyFunc, void *p1);
 void daClearP2(void *daptr, void * /*dynDestroyFuncP2*/ destroyFunc, void *p1, void *p2);
 void daClearStrings(void *daptr);
@@ -156,8 +158,10 @@ typedef struct dynMap
 } dynMap;
 
 dynMap *dmCreate(dmKeyFlags flags, dynSize elementSize);
-void dmDestroy(dynMap *dm, void * /*dynDestroyFunc*/ destroyFunc);
-void dmClear(dynMap *dm, void * /*dynDestroyFunc*/ destroyFunc);
+void dmDestroyContents(dynMap *dm, void * /*dynDestroyFunc*/ destroyFunc);
+void dmDestroyPtr(dynMap *dm, void * /*dynDestroyFunc*/ destroyFunc);
+void dmClearContents(dynMap *dm, void * /*dynDestroyFunc*/ destroyFunc);
+void dmClearPtr(dynMap *dm, void * /*dynDestroyFunc*/ destroyFunc);
 
 dynMapEntry *dmGetString(dynMap *dm, const char *key);
 int dmHasString(dynMap *dm, const char *key);
@@ -168,6 +172,10 @@ int dmHasInteger(dynMap *dm, dynInt key);
 void dmEraseInteger(dynMap *dm, dynInt key, void * /*dynDestroyFunc*/ destroyFunc);
 
 void *dmEntryData(dynMapEntry *entry);
+
+// return non-zero to continue iterating, 0 to stop
+typedef int (*dynMapIterateFunc)(dynMap *dm, dynMapEntry *e, void *userData);
+void dmIterate(dynMap *dm, /* dynMapIterateFunc */ void *func, void *userData);
 
 // Convenience macros
 
