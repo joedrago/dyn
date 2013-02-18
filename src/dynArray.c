@@ -338,6 +338,15 @@ dynSize daPushIndirect(void *daptr, void *entry)
     return da->size - 1;
 }
 
+dynSize daPush0(void *daptr)
+{
+    dynArray *da = daMakeRoom(daptr, 1);
+    char *values = dynArrayToValues(da);
+    memset(values + (da->elementSize * da->size), 0, da->elementSize);
+    ++da->size;
+    return da->size - 1;
+}
+
 dynSize daPushU8(void *daptr, dynU8 v)
 {
     daPushIndirect(daptr, &v);

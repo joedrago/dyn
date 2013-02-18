@@ -87,6 +87,7 @@ void daUnshiftU32(void *daptr, dynU32 v);
 void daUnshiftF32(void *daptr, dynF32 v);
 dynSize daPushIndirect(void *daptr, void *entry);
 #define daPush(DAPTR, P) daPushIndirect(DAPTR, &(P))
+dynSize daPush0(void *daptr);
 dynSize daPushU8(void *daptr, dynU8 v);
 dynSize daPushU16(void *daptr, dynU16 v);
 dynSize daPushU32(void *daptr, dynU32 v);
