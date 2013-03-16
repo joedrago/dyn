@@ -349,22 +349,22 @@ dynSize daPush0(void *daptr)
 
 dynSize daPushU8(void *daptr, dynU8 v)
 {
-    daPushIndirect(daptr, &v);
+    return daPushIndirect(daptr, &v);
 }
 
 dynSize daPushU16(void *daptr, dynU16 v)
 {
-    daPushIndirect(daptr, &v);
+    return daPushIndirect(daptr, &v);
 }
 
 dynSize daPushU32(void *daptr, dynU32 v)
 {
-    daPushIndirect(daptr, &v);
+    return daPushIndirect(daptr, &v);
 }
 
 dynSize daPushF32(void *daptr, dynF32 v)
 {
-    daPushIndirect(daptr, &v);
+    return daPushIndirect(daptr, &v);
 }
 
 int daPop(void *daptr, void *elementPtr)

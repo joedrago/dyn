@@ -757,7 +757,7 @@ void MurmurHash3_x64_128 ( const void * key, int len,
 static dynMapHash murmur3string(const unsigned char *str)
 {
     dynMapHash hash;
-    MurmurHash3_x86_32(str, strlen(str), 0, &hash);
+    MurmurHash3_x86_32(str, (int)strlen(str), 0, &hash);
     return hash;
 }
 

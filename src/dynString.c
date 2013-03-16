@@ -241,7 +241,7 @@ void dsCalcLength(char **dsptr)
     dynString *ds = dsGet(dsptr, 0);
     if(ds)
     {
-        dsSetLength(dsptr, strlen(ds->buffer));
+        dsSetLength(dsptr, (int)strlen(ds->buffer));
     }
 }
 
