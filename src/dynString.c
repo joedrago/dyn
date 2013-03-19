@@ -230,7 +230,7 @@ void dsSetLength(char **dsptr, dynSize newLength)
     }
     if(newLength > ds->length)
     {
-        memset(ds->buffer + ds->length, ' ', sizeof(char) * (newLength - ds->length));
+        //memset(ds->buffer + ds->length, ' ', sizeof(char) * (newLength - ds->length));
     }
     ds->length = newLength;
     ds->buffer[ds->length] = 0;
