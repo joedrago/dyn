@@ -20,6 +20,10 @@
 #define dynInt int
 #endif
 
+#ifndef dynFloat
+#define dynFloat float
+#endif
+
 #ifndef dynU8
 #define dynU8 unsigned char
 #endif
@@ -222,5 +226,35 @@ void dsSetCapacity(char **dsptr, dynSize newCapacity);
 int dsCmp(char **dsptr, char **other);
 dynSize dsLength(char **dsptr);
 dynSize dsCapacity(char **dsptr);
+
+// ---------------------------------------------------------------------------
+// JSON
+
+enum
+{
+    DJT_NULL = 0,
+    DJT_BOOL,
+    DJT_NUMBER,
+    DJT_STRING,
+    DJT_ARRAY,
+    DJT_OBJECT
+};
+
+typedef struct dynJSON
+{
+    dynInt type;
+    union
+    {
+        dynInt intVal;
+        dynFloat floatVal;
+        char *stringVal;           // dynString
+        struct dynJSON **arrayVal; // dynArray
+        dynMap *objectVal;
+    };
+} dynJSON;
+
+dynJSON *djCreate(int type);
+void djDestroy(dynJSON *dj);
+dynJSON *djParse(const char *jsonText);
 
 #endif
