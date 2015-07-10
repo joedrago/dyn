@@ -35,10 +35,10 @@ typedef struct Object
     const char *name;
 } Object;
 
-static void destroyObject(Object **obj)
+static void destroyObject(Object *obj)
 {
-    printf("destroying object %s\n", (*obj)->name);
-    free(*obj);
+    printf("destroying object %s\n", obj->name);
+    free(obj);
 }
 
 static void destroyObjectP1(const char *p1, Object *obj)
@@ -88,7 +88,7 @@ static void printObjects(Object ***arr)
 
 static void printString(char **str)
 {
-    printf("String [P:0x%p L:" dynSizeFormat " C:" dynSizeFormat "]: \"%s\"\n", 
+    printf("String [P:0x%p L:" dynSizeFormat " C:" dynSizeFormat "]: \"%s\"\n",
         str,
         dsLength(str),
         dsCapacity(str),
@@ -160,7 +160,7 @@ void test_daShift()
     while(daShift(&objects, &obj))
     {
         printf("Shifted Object: %s\n", obj->name);
-        destroyObject(&obj);
+        destroyObject(obj);
     }
     daDestroy(&objects, (dynDestroyFunc)destroyObject);
 }
@@ -196,7 +196,7 @@ void test_daPop()
     while(daPop(&objects, &obj))
     {
         printf("Popped Object: %s\n", obj->name);
-        destroyObject(&obj);
+        destroyObject(obj);
     }
     daDestroy(&objects, (dynDestroyFunc)destroyObject);
 }
@@ -228,9 +228,9 @@ void test_daErase()
 {
     Object **objects = NULL;
     fillObjects(&objects);
-    destroyObject(&objects[1]);
+    destroyObject(objects[1]);
     daErase(&objects, 1);
-    destroyObject(&objects[3]);
+    destroyObject(objects[3]);
     daErase(&objects, 3);
     printObjects(&objects);
     daDestroy(&objects, (dynDestroyFunc)destroyObject);
@@ -240,9 +240,9 @@ void test_daEraseP1()
 {
     Object **objects = NULL;
     fillObjects(&objects);
-    destroyObject(&objects[1]);
+    destroyObject(objects[1]);
     daErase(&objects, 1);
-    destroyObject(&objects[3]);
+    destroyObject(objects[3]);
     daErase(&objects, 3);
     printObjects(&objects);
     daDestroy(&objects, (dynDestroyFunc)destroyObject);
@@ -252,9 +252,9 @@ void test_daEraseP2()
 {
     Object **objects = NULL;
     fillObjects(&objects);
-    destroyObject(&objects[1]);
+    destroyObject(objects[1]);
     daErase(&objects, 1);
-    destroyObject(&objects[3]);
+    destroyObject(objects[3]);
     daErase(&objects, 3);
     printObjects(&objects);
     daDestroy(&objects, (dynDestroyFunc)destroyObject);
@@ -352,9 +352,9 @@ void test_daSquash()
 {
     Object **objects = NULL;
     fillObjects(&objects);
-    destroyObject(&objects[1]);
+    destroyObject(objects[1]);
     objects[1] = NULL;
-    destroyObject(&objects[3]);
+    destroyObject(objects[3]);
     objects[3] = NULL;
     daSquash(&objects);
     printObjects(&objects);
@@ -630,8 +630,8 @@ int main(int argc, char **argv)
 //    TEST(daSetSizeP2);
     TEST(daSize);
     TEST(daSetCapacity);
-//    TEST(daSetCapacityP1);
 //    TEST(daSetCapacityP2);
+//    TEST(daSetCapacityP1);
     TEST(daCapacity);
     TEST(daSquash);
     TEST(da8);
