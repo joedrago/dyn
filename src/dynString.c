@@ -11,7 +11,7 @@
 #include <string.h>
 #include <stdio.h>
 
-#ifdef _WIN32
+#if defined(_WIN32) && !defined(va_copy)
 #define va_copy(dest, src) ((void)((dest) = (src)))
 #endif
 
